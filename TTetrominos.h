@@ -5,6 +5,13 @@
 #include "tetrominotris_config.h"
 
 /*
+ * @defined TTetrominosCount
+ *
+ * The number of distinct game pieces.
+ */
+#define TTetrominosCount 7
+
+/*
  * @const TTetrominos
  *
  * The set of all seven tetrominos in their four orientations.
@@ -73,14 +80,7 @@
  *     [....]
  *     
  */
-extern const uint64_t  TTetrominos[7];
-
-/*
- * @const TTetrominosCount
- *
- * The number of tetrominos in the TTetrominos array.
- */
-extern const unsigned int TTetrominosCount;
+extern const uint64_t  TTetrominos[TTetrominosCount];
 
 /*
  * @function TTetrominosExtractOrientation

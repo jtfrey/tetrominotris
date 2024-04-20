@@ -1,7 +1,6 @@
 
 #include "TTetrominos.h"
 #include "TBoard.h"
-#include "TGridScanner.h"
 
 int
 main()
@@ -34,6 +33,8 @@ main()
     
     TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 0, 18), true);
     TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 1, 18), true);
+    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 2, 18), true);
+    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 3, 18), true);
     TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 4, 18), true);
     TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 5, 18), true);
     TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 6, 18), true);
@@ -53,30 +54,20 @@ main()
     TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 9, 19), true);
     TBoardSummary(ourBoard);
     
-    TGridScanner    ourScanner = TGridScannerMake(ourBoard);
+    TBoardIterator  ourScanner = TBoardIteratorMake(ourBoard);
     bool            foundCell, cellVal;
+    unsigned int    rowVal;
     
-    printf("TGridScanner - fast scanner initialized\n");
-    TGridScannerMoveToPos(&ourScanner, TGridPosMake(9, 17));
-    printf("TGridScanner - fast scanner moved to grid position %u, %u (a.k.a. index %u, %u)\n", ourScanner.i, ourScanner.j, ourScanner.W, ourScanner.b);
-    if ( TGridScannerNext(&ourScanner, &cellVal) ) {
-        printf("TGridScanner - value at (%u, %u) = %d\n", ourScanner.i, ourScanner.j, cellVal);
-    }
-    while ( (foundCell = TGridScannerNext(&ourScanner, &cellVal)) && ! cellVal ) {}
+    printf("TBoardIterator - fast scanner initialized\n");
+    while ( (foundCell = TBoardIteratorNext(&ourScanner, &cellVal)) && ! cellVal ) {}
     if ( foundCell ) {
-        printf("TGridScanner - fast scanner next true at position %u, %u (a.k.a. index %u, %u)\n", ourScanner.i, ourScanner.j, ourScanner.W, ourScanner.b);
-    }
-    TGridScannerMoveToPos(&ourScanner, TGridPosMake(7, 0));
-    printf("TGridScanner - fast scanner moved to grid position %u, %u (a.k.a. index %u, %u)\n", ourScanner.i, ourScanner.j, ourScanner.W, ourScanner.b);
-    while ( (foundCell = TGridScannerNext(&ourScanner, &cellVal)) && ! cellVal ) {}
-    if ( foundCell ) {
-        printf("TGridScanner - fast scanner next true at position %u, %u (a.k.a. index %u, %u)\n", ourScanner.i, ourScanner.j, ourScanner.W, ourScanner.b);
+        printf("TBoardIterator - fast scanner next true at position (%u,%u)\n", ourScanner.i, ourScanner.j);
     }
     
-    ourScanner = TGridScannerMake(ourBoard);
-    printf("TGridScanner - fast scanner reinitialized\n");
-    while ( TGridScannerNext(&ourScanner, &cellVal) ) {
-        printf("TGridScanner - fast scanner %s at position %u, %u (a.k.a. index %u, %u)\n", cellVal ? "ON " : "OFF", ourScanner.i, ourScanner.j, ourScanner.W, ourScanner.b);
+    ourScanner = TBoardIteratorMake(ourBoard);
+    printf("TBoardIterator - fast scanner reinitialized\n");
+    if ( TBoardIteratorNextFullRow(&ourScanner, &rowVal) ) {
+        printf("TBoardIterator - fast scanner found full row at position %u\n", rowVal);
     }
     
     TBoardDestroy(ourBoard);

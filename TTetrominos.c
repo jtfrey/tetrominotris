@@ -1,7 +1,7 @@
 
 #include "TTetrominos.h"
 
-const uint64_t  TTetrominos[7] = {
+const uint64_t  TTetrominos[TTetrominosCount] = {
                         0x0660066006600660,     // Square
                         0x222200F044440F00,     // Straight
                         0x2620027046400E40,     // T
@@ -10,8 +10,6 @@ const uint64_t  TTetrominos[7] = {
                         0x4460074062200170,     // L #1
                         0x2260047064400710      // L #2
                     };
-
-const unsigned int TTetrominosCount = (sizeof(TTetrominos) / sizeof(uint64_t));
 
 //
 

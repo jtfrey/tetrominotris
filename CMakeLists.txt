@@ -9,6 +9,8 @@ project(tetrominotris
         LANGUAGES C
     )
 
+option(TBOARD_DEBUG "Enable debug printing in TBoard code" ON)
+
 #
 # Locate the curses tui library:
 #
@@ -54,7 +56,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #
 # The game:
 #
-add_executable(tetrominotris TTetrominos.c TBoard.c TGridScanner.c tui_window.c tetrominotris.c)
+add_executable(tetrominotris TTetrominos.c TBoard.c tui_window.c tetrominotris.c)
 target_include_directories(tetrominotris PRIVATE ${CURSES_INCLUDE_DIRS})
 target_compile_options(tetrominotris PRIVATE ${CURSES_CFLAGS})
 target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES})
@@ -62,4 +64,4 @@ target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES})
 #
 # The library demo:
 #
-add_executable(tetrominotris_demo TTetrominos.c TBoard.c TGridScanner.c tetrominotris_demo.c)
+add_executable(tetrominotris_demo TTetrominos.c TBoard.c tetrominotris_demo.c)

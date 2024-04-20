@@ -38,6 +38,8 @@
 #   define TETROMINOTRIS_VERSION "<unknown>"
 #endif
 
+#cmakedefine TBOARD_DEBUG
+
 /*
  * @typedef TGridPos
  *
