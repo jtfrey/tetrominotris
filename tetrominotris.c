@@ -1,6 +1,6 @@
 
 #include "TTetrominos.h"
-#include "TBoard.h"
+#include "TBitGrid.h"
 #include "TScoreboard.h"
 #include "tui_window.h"
 
@@ -18,22 +18,23 @@ gameBoardDraw(
     static uint8_t      tBlockTop[10] = { 0xE2, 0x94, 0x8F, 0xE2, 0x94, 0x81, 0xE2, 0x94, 0x93, '\0' };
     static uint8_t      tBlockBot[10] = { 0xE2, 0x94, 0x97, 0xE2, 0x94, 0x81, 0xE2, 0x94, 0x9B, '\0' };
     
-#define THE_BOARD   ((TBoard*)context)
+#define THE_BOARD   ((TBitGrid*)context)
     
     int                 i, j;
-    chtype              line1[THE_BOARD->w * 4 + 1];
-    chtype              line2[THE_BOARD->w * 4 + 1];
-    TBoardIterator      gridScanner = TBoardIteratorMake(THE_BOARD);
+    chtype              line1[THE_BOARD->dimensions.w * 4 + 1];
+    chtype              line2[THE_BOARD->dimensions.w * 4 + 1];
+    TBitGridIterator    *gridScanner = TBitGridIteratorCreate(THE_BOARD, 1);
+    TGridPos            P;
     
     j = 0;
-    while ( j < THE_BOARD->h ) {
+    while ( j < THE_BOARD->dimensions.h ) {
         chtype          *line1Ptr = line1, *line2Ptr = line2;
         
-        i = THE_BOARD->w;
+        i = THE_BOARD->dimensions.w;
         while ( i-- ) {
-            bool        cellValue;
+            uint8_t     cellValue;
             
-            if ( TBoardIteratorNext(&gridScanner, &cellValue) && cellValue ) {
+            if ( TBitGridIteratorNext(gridScanner, &P, &cellValue) && cellValue ) {
                 *line1Ptr++ = A_REVERSE | '|'; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
                 *line2Ptr++ = A_REVERSE | '|'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
             } else {
@@ -49,6 +50,7 @@ gameBoardDraw(
         while ( i-- ) waddch(window_ptr, *line2Ptr++);
         j++;
     }
+    TBitGridIteratorDestroy(gridScanner);
 
 #undef THE_BOARD
 }
@@ -113,7 +115,7 @@ statsDraw(
 {
 #define THE_STATS_DATA      ((TStatsData*)context)
 #define THE_SCOREBOARD      THE_STATS_DATA->scoreboard
-    unsigned int            tIdx;
+    unsigned int            tIdx, colorIdx = 0;
     
     wclear(window_ptr);
     wattron(window_ptr, A_UNDERLINE);
@@ -138,8 +140,8 @@ statsDraw(
         wmove(window_ptr, 11 + 3 * tIdx, 2);
         count = 4; while ( count-- ) {
             if (rep & mask) {
-                waddch(window_ptr, A_REVERSE | '|');
-                waddch(window_ptr, A_REVERSE | '_');
+                waddch(window_ptr, '|' | A_REVERSE);
+                waddch(window_ptr, '_' | A_REVERSE);
             } else {
                 waddch(window_ptr, ' ');
                 waddch(window_ptr, ' ');
@@ -150,8 +152,8 @@ statsDraw(
         wmove(window_ptr, 12 + 3 * tIdx, 2);
         count = 4; while ( count-- ) {
             if (rep & mask) {
-                waddch(window_ptr, A_REVERSE | '|');
-                waddch(window_ptr, A_REVERSE | '_');
+                waddch(window_ptr, '|' | A_REVERSE);
+                waddch(window_ptr, '_' | A_REVERSE);
             } else {
                 waddch(window_ptr, ' ');
                 waddch(window_ptr, ' ');
@@ -159,6 +161,7 @@ statsDraw(
             mask >>= 1;
         }
         tIdx++;
+        colorIdx = (colorIdx + 1) % 4;
     }
 #undef THE_SCOREBOARD
 #undef THE_STATS_DATA
@@ -208,6 +211,7 @@ nextTetrominoDraw(
     chtype          line2[4 * 4], *line2Ptr = line2;
     unsigned int    count, j = 0;
     uint16_t        rep, mask = 0x8000;
+    int             colorIdx = random() % 4;
     
     wclear(window_ptr);
 
@@ -217,8 +221,8 @@ nextTetrominoDraw(
         line1Ptr = line1, line2Ptr = line2;
         count = 4; while ( count-- ) {
             if (rep & mask) {
-                *line1Ptr++ = A_REVERSE | '|'; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
-                *line2Ptr++ = A_REVERSE | '|'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
+                *line1Ptr++ = '|' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE;
+                *line2Ptr++ = '|' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE;
             } else {
                 *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
                 *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
@@ -245,8 +249,8 @@ main()
     WINDOW          *mainWindow = NULL;
     tui_window_ref  gameBoardWindow = NULL, statsWindow = NULL, scoreWindow = NULL,
                     nextTetrominoWindow = NULL;
-    int             keyCh;
-    TBoard          *gameBoard = NULL;
+    int             keyCh, screenHeight, screenWidth;
+    TBitGrid        *gameBoard = NULL;
     TScoreboard     gameScoreboard;
     TStatsData      statsData = TStatsDataMake(&gameScoreboard);
     TNextUp         nextUp = {
@@ -269,41 +273,64 @@ main()
     // Enable the keypad:
     keypad(mainWindow, TRUE);
     
+    // Determine screen size:
+    getmaxyx(mainWindow, screenHeight, screenWidth);
+    if ( screenHeight < 40 || screenWidth < 100 ) {
+        delwin(mainWindow);
+        endwin();
+        refresh();
+        printf("Please resize your terminal to at least 100 x 40.\n\n");
+        exit(1);
+    }
+    /*if ( ! has_colors() ) {
+        delwin(mainWindow);
+        endwin();
+        refresh();
+        printf("No color.\n\n");
+        exit(1);
+    }
+    
+    start_color();
+    init_pair(1, COLOR_WHITE, COLOR_RED);
+    init_pair(2, COLOR_WHITE, COLOR_GREEN);
+    init_pair(3, COLOR_WHITE, COLOR_BLUE);
+    init_pair(4, COLOR_WHITE, COLOR_YELLOW);*/
+    
     // Create the game board:
-    gameBoard = TBoardCreate(10, 15);
+    gameBoard = TBitGridCreate(1, 10, 15);
     
     // Create the scoreboard:
     gameScoreboard = TScoreboardMake();
-
+    
     // Fake-up the initial layout
-    TBoardFill(gameBoard, false);
+    TBitGridFill(gameBoard, 0);
     
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 2, 4), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 3, 4), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 4, 4), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 3, 5), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 2, 4), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 3, 4), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 4, 4), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 3, 5), true);
     
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 8, 12), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 8, 12), true);
     
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 0, 13), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 1, 13), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 4, 13), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 5, 13), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 6, 13), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 7, 13), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 8, 13), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 9, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 0, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 1, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 4, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 5, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 6, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 7, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 8, 13), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 9, 13), true);
     
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 0, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 1, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 2, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 3, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 4, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 5, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 6, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 7, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 8, 14), true);
-    TBoardSetValueAtGridIndex(gameBoard, TBoardGridIndexMakeWithPos(gameBoard, 9, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 0, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 1, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 2, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 3, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 4, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 5, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 6, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 7, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 8, 14), true);
+    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 9, 14), true);
     
     // Create our windows:
     gameBoardWindow = tui_window_alloc(26, 7, 44, 32, 0, NULL, 0, gameBoardDraw, (const void*)gameBoard);
@@ -314,21 +341,21 @@ main()
     if ( gameBoardWindow && statsWindow) {
         refresh();
         drawGameTitle(mainWindow);
-        tui_window_refresh(gameBoardWindow, 1);
         tui_window_refresh(statsWindow, 1);
         tui_window_refresh(scoreWindow, 1);
         tui_window_refresh(nextTetrominoWindow, 1);
+        tui_window_refresh(gameBoardWindow, 1);
         doupdate();
     
         while ( (keyCh = getch()) != 'q' ) {
             switch ( keyCh ) {
                 case 's':
                 case 'S':
-                    TBoardScroll(gameBoard);
+                    TBitGridScroll(gameBoard);
                     break;
                 case 'c':
                 case 'C':
-                    TBoardClearLines(gameBoard, 13, 13);
+                    TBitGridClearLines(gameBoard, 13, 13);
                     break;
                 case 'n':
                 case 'N':
@@ -345,6 +372,12 @@ main()
                     break;
                 case 'p':
                     TScoreboardAddLinesOfType(&gameScoreboard, 1 + random() % 4);
+                    break;
+                case 'L':                    
+                    init_pair(1, COLOR_WHITE, COLOR_MAGENTA);
+                    init_pair(2, COLOR_WHITE, COLOR_CYAN);
+                    init_pair(3, COLOR_BLACK, COLOR_WHITE);
+                    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
                     break;
             }
             refresh();

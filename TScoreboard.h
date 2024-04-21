@@ -31,7 +31,7 @@ typedef struct {
     unsigned int        pointsAwarded[TScoreboardLineCountTypeListLength];
     unsigned int        nLinesOfType[TScoreboardLineCountTypeListLength];
     unsigned int        nLinesTotal;
-    unsigned int        level;
+    unsigned int        level, nextLevelUp;
     unsigned int        score;
 } TScoreboard;
 
@@ -40,7 +40,7 @@ TScoreboardMake(void)
 {
     TScoreboard     newScoreboard = {
                         .score = 0,
-                        .level = 0,
+                        .level = 0, .nextLevelUp = 10,
                         .nLinesTotal = 0,
                         .pointsAwarded = { 30, 100, 300, 1200 },
                         .nLinesOfType = { 0, 0, 0, 0 },
@@ -59,7 +59,10 @@ TScoreboardAddLinesOfType(
     scoreboard->nLinesOfType[lineCount - 1]++;
     scoreboard->score += scoreboard->pointsAwarded[lineCount - 1] * (scoreboard->level + 1);
     
-    if ( scoreboard->nLinesTotal % 10 == 0 ) scoreboard->level++;
+    if ( scoreboard->nLinesTotal >= scoreboard->nextLevelUp ) {
+        scoreboard->level++;
+        scoreboard->nextLevelUp += 10;
+    }
 }
     
 #endif /* __TSCOREBOARD_H__ */
