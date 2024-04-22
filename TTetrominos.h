@@ -126,19 +126,19 @@ TTetrominoShiftUp(
     uint64_t    tetromino
 )
 {
-    // They're all clear at the top, shift en masse
-    if ( ! (tetromino & 0xF000F000F000F000ULL) ) {
-        tetromino <<= 4;
+    // They're all clear at the bottom, shift en masse
+    if ( ! (tetromino & 0x000F000F000F000FULL) ) {
+        tetromino >>= 4;
     } else {
         // Check each orientation explicitly:
-        if ( ! (tetromino & 0xF000000000000000ULL) )
-            tetromino = ((tetromino & 0x0FFF000000000000ULL) << 4) | (tetromino & 0x0000FFFFFFFFFFFFULL);
-        if ( ! (tetromino & 0x0000F00000000000ULL) )
-            tetromino = ((tetromino & 0x00000FFF00000000ULL) << 4) | (tetromino & 0xFFFF0000FFFFFFFFULL);
-        if ( ! (tetromino & 0x00000000F0000000ULL) )
-            tetromino = ((tetromino & 0x000000000FFF0000ULL) << 4) | (tetromino & 0xFFFFFFFF0000FFFFULL);
-        if ( ! (tetromino & 0x000000000000F000ULL) )
-            tetromino = ((tetromino & 0x0000000000000FFFULL) << 4) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
+        if ( ! (tetromino & 0x000F000000000000ULL) )
+            tetromino = ((tetromino & 0xFFF0000000000000ULL) >> 4) | (tetromino & 0x0000FFFFFFFFFFFFULL);
+        if ( ! (tetromino & 0x0000000F00000000ULL) )
+            tetromino = ((tetromino & 0x0000FFF000000000ULL) >> 4) | (tetromino & 0xFFFF0000FFFFFFFFULL);
+        if ( ! (tetromino & 0x00000000000F0000ULL) )
+            tetromino = ((tetromino & 0x00000000FFF00000ULL) >> 4) | (tetromino & 0xFFFFFFFF0000FFFFULL);
+        if ( ! (tetromino & 0x000000000000000FULL) )
+            tetromino = ((tetromino & 0x000000000000FFF0ULL) >> 4) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
     }
     return tetromino;
 }
@@ -157,19 +157,19 @@ TTetrominoShiftDown(
     uint64_t    tetromino
 )
 {
-    // They're all clear at the bottom, shift en masse
-    if ( ! (tetromino & 0x000F000F000F000FULL) ) {
-        tetromino >>= 4;
+    // They're all clear at the top, shift en masse
+    if ( ! (tetromino & 0xF000F000F000F000ULL) ) {
+        tetromino <<= 4;
     } else {
         // Check each orientation explicitly:
-        if ( ! (tetromino & 0x000F000000000000ULL) )
-            tetromino = ((tetromino & 0xFFF0000000000000ULL) >> 4) | (tetromino & 0x0000FFFFFFFFFFFFULL);
-        if ( ! (tetromino & 0x0000000F00000000ULL) )
-            tetromino = ((tetromino & 0x0000FFF000000000ULL) >> 4) | (tetromino & 0xFFFF0000FFFFFFFFULL);
-        if ( ! (tetromino & 0x00000000000F0000ULL) )
-            tetromino = ((tetromino & 0x00000000FFF00000ULL) >> 4) | (tetromino & 0xFFFFFFFF0000FFFFULL);
-        if ( ! (tetromino & 0x000000000000000FULL) )
-            tetromino = ((tetromino & 0x000000000000FFF0ULL) >> 4) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
+        if ( ! (tetromino & 0xF000000000000000ULL) )
+            tetromino = ((tetromino & 0x0FFF000000000000ULL) << 4) | (tetromino & 0x0000FFFFFFFFFFFFULL);
+        if ( ! (tetromino & 0x0000F00000000000ULL) )
+            tetromino = ((tetromino & 0x00000FFF00000000ULL) << 4) | (tetromino & 0xFFFF0000FFFFFFFFULL);
+        if ( ! (tetromino & 0x00000000F0000000ULL) )
+            tetromino = ((tetromino & 0x000000000FFF0000ULL) << 4) | (tetromino & 0xFFFFFFFF0000FFFFULL);
+        if ( ! (tetromino & 0x000000000000F000ULL) )
+            tetromino = ((tetromino & 0x0000000000000FFFULL) << 4) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
     }
     return tetromino;
 }
@@ -189,18 +189,18 @@ TTetrominoShiftLeft(
 )
 {
     // They're all clear at the left, shift en masse
-    if ( ! (tetromino & 0x8888888888888888ULL) ) {
-        tetromino <<= 1;
+    if ( ! (tetromino & 0x1111111111111111ULL) ) {
+        tetromino >>= 1;
     } else {
         // Check each orientation explicitly:
-        if ( ! (tetromino & 0x8888000000000000ULL) )
-            tetromino = ((tetromino & 0x7777000000000000ULL) << 1) | (tetromino & 0x0000FFFFFFFFFFFFULL);
-        if ( ! (tetromino & 0x0000888800000000ULL) )
-            tetromino = ((tetromino & 0x0000777700000000ULL) << 1) | (tetromino & 0xFFFF0000FFFFFFFFULL);
-        if ( ! (tetromino & 0x0000000088880000ULL) )
-            tetromino = ((tetromino & 0x0000000077770000ULL) << 1) | (tetromino & 0xFFFFFFFF0000FFFFULL);
-        if ( ! (tetromino & 0x0000000000008888ULL) )
-            tetromino = ((tetromino & 0x0000000000007777ULL) << 1) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
+        if ( ! (tetromino & 0x1111000000000000ULL) )
+            tetromino = ((tetromino & 0xEEEE000000000000ULL) >> 1) | (tetromino & 0x0000FFFFFFFFFFFFULL);
+        if ( ! (tetromino & 0x0000111100000000ULL) )
+            tetromino = ((tetromino & 0x0000EEEE00000000ULL) >> 1) | (tetromino & 0xFFFF0000FFFFFFFFULL);
+        if ( ! (tetromino & 0x0000000011110000ULL) )
+            tetromino = ((tetromino & 0x00000000EEEE0000ULL) >> 1) | (tetromino & 0xFFFFFFFF0000FFFFULL);
+        if ( ! (tetromino & 0x0000000000001111ULL) )
+            tetromino = ((tetromino & 0x000000000000EEEEULL) >> 1) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
     }
     return tetromino;
 }
@@ -220,18 +220,18 @@ TTetrominoShiftRight(
 )
 {
     // They're all clear at the right, shift en masse
-    if ( ! (tetromino & 0x1111111111111111ULL) ) {
-        tetromino >>= 1;
+    if ( ! (tetromino & 0x8888888888888888ULL) ) {
+        tetromino <<= 1;
     } else {
         // Check each orientation explicitly:
-        if ( ! (tetromino & 0x1111000000000000ULL) )
-            tetromino = ((tetromino & 0xEEEE000000000000ULL) >> 1) | (tetromino & 0x0000FFFFFFFFFFFFULL);
-        if ( ! (tetromino & 0x0000111100000000ULL) )
-            tetromino = ((tetromino & 0x0000EEEE00000000ULL) >> 1) | (tetromino & 0xFFFF0000FFFFFFFFULL);
-        if ( ! (tetromino & 0x0000000011110000ULL) )
-            tetromino = ((tetromino & 0x00000000EEEE0000ULL) >> 1) | (tetromino & 0xFFFFFFFF0000FFFFULL);
-        if ( ! (tetromino & 0x0000000000001111ULL) )
-            tetromino = ((tetromino & 0x000000000000EEEEULL) >> 1) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
+        if ( ! (tetromino & 0x8888000000000000ULL) )
+            tetromino = ((tetromino & 0x7777000000000000ULL) << 1) | (tetromino & 0x0000FFFFFFFFFFFFULL);
+        if ( ! (tetromino & 0x0000888800000000ULL) )
+            tetromino = ((tetromino & 0x0000777700000000ULL) << 1) | (tetromino & 0xFFFF0000FFFFFFFFULL);
+        if ( ! (tetromino & 0x0000000088880000ULL) )
+            tetromino = ((tetromino & 0x0000000077770000ULL) << 1) | (tetromino & 0xFFFFFFFF0000FFFFULL);
+        if ( ! (tetromino & 0x0000000000008888ULL) )
+            tetromino = ((tetromino & 0x0000000000007777ULL) << 1) | (tetromino & 0xFFFFFFFFFFFF0000ULL);
     }
     return tetromino;
 }
@@ -252,7 +252,7 @@ TTetrominoOrientationShiftUp(
     uint16_t    tetromino
 )
 {
-    return ( ! (tetromino & 0xF000) ) ? (tetromino << 4) : tetromino;
+    return ( ! (tetromino & 0x000F) ) ? (tetromino >> 4) : tetromino;
 }
 
 /*
@@ -271,7 +271,7 @@ TTetrominoOrientationShiftDown(
     uint16_t    tetromino
 )
 {
-    return ( ! (tetromino & 0x000F) ) ? (tetromino >> 4) : tetromino;
+    return ( ! (tetromino & 0xF000) ) ? (tetromino << 4) : tetromino;
 }
 
 /*
@@ -290,7 +290,7 @@ TTetrominoOrientationShiftLeft(
     uint16_t    tetromino
 )
 {
-    return ( ! (tetromino & 0x8888) ) ? (tetromino << 1) : tetromino;
+    return ( ! (tetromino & 0x1111) ) ? (tetromino >> 1) : tetromino;
 }
 
 /*
@@ -309,8 +309,52 @@ TTetrominoOrientationShiftRight(
     uint16_t    tetromino
 )
 {
-    return ( ! (tetromino & 0x1111) ) ? (tetromino >> 1) : tetromino;
+    return ( ! (tetromino & 0x8888) ) ? (tetromino << 1) : tetromino;
 }
+
+/*
+ * @function TTetrominoOrientationShiftVertical
+ *
+ * Move the tetromino up (negative) or down (positive) by the
+ * specified number of steps (absolute value of shift).
+ */
+static inline uint16_t
+TTetrominoOrientationShiftVertical(
+    uint16_t    tetromino,
+    int         shift
+)
+{
+    if ( shift != 0 ) {
+        if ( shift < 0 )
+            while ( shift++ < 0 ) tetromino = TTetrominoOrientationShiftUp(tetromino);
+        else
+            while ( shift-- > 0 ) tetromino = TTetrominoOrientationShiftDown(tetromino);
+    }
+    return tetromino;
+}
+
+
+/*
+ * @function TTetrominoOrientationShiftHorizontal
+ *
+ * Move the tetromino left (negative) or right (positive) by the
+ * specified number of steps (absolute value of shift).
+ */
+static inline uint16_t
+TTetrominoOrientationShiftHorizontal(
+    uint16_t    tetromino,
+    int         shift
+)
+{
+    if ( shift != 0 ) {
+        if ( shift < 0 )
+            while ( shift++ < 0 ) tetromino = TTetrominoOrientationShiftLeft(tetromino);
+        else
+            while ( shift-- > 0 ) tetromino = TTetrominoOrientationShiftRight(tetromino);
+    }
+    return tetromino;
+}
+
 
 /*
  * @function TTetrominoSummary

@@ -45,9 +45,12 @@
  *
  * Positions on the game board grid will exist as coordinate
  * pairs, but we will need to map them to (byte, bit) indices.
+ *
+ * Signed integers are used to faciliate off-grid positioning
+ * of sprites/collision boxes.
  */
 typedef struct {
-    unsigned int    i, j;
+    int     i, j;
 } TGridPos;
 
 /*
@@ -57,8 +60,8 @@ typedef struct {
  */
 static inline TGridPos
 TGridPosMake(
-    unsigned int    i,
-    unsigned int    j
+    int     i,
+    int     j
 )
 {
     TGridPos        P = { .i = i, .j = j };

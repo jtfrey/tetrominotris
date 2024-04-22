@@ -22,7 +22,7 @@ TTetrominoSummary(
     static uint8_t      tBlockBot[10] = { 0xE2, 0x94, 0x97, 0xE2, 0x94, 0x81, 0xE2, 0x94, 0x9B, '\0' };
     static uint8_t      tEmpty[10] = { 0xE2, 0x96, 0x91, 0xE2, 0x96, 0x91, 0xE2, 0x96, 0x91, '\0' };
     unsigned int        i, j, k;
-    uint64_t            row, rowMask = 0xF000F000F000F000ULL, aggrColMask = 0x8000800080008000ULL;
+    uint64_t            row, rowMask = 0x000F000F000F000FULL, aggrColMask = 0x0001000100010001ULL;
     
     j = 4;
     // Loop over rows
@@ -32,11 +32,11 @@ TTetrominoSummary(
         int             tile1Len = sizeof(tile1);
         int             tile2Len = sizeof(tile2);
         uint64_t        row = fullTetromino & rowMask;
-        uint64_t        colMask = aggrColMask & 0xFFFF000000000000ULL;
+        uint64_t        colMask = aggrColMask & 0x000000000000FFFFULL;
         
         // Prep for the next row:
-        rowMask >>= 4;
-        aggrColMask >>= 4;
+        rowMask <<= 4;
+        aggrColMask <<= 4;
         
         // Loop over each orientation
         k = 4;
@@ -61,10 +61,10 @@ TTetrominoSummary(
                     tile2Ptr += l;
                     tile2Len -= l;
                 }
-                colMask >>= 1;
+                colMask <<= 1;
             }
             // Skip ahead to next orientation:
-            colMask >>= 12;
+            colMask <<= 12;
             if ( colMask ) {
                 l = snprintf(tile1Ptr, tile1Len, "  ");
                 tile1Ptr += l;
@@ -105,7 +105,7 @@ TTetrominoOrientationSummary(
         while ( i-- ) {
             int         l;
             
-            if ( tetromino & 0x8000 ) {
+            if ( tetromino & 0x0001 ) {
                 l = snprintf(tile1Ptr, tile1Len, "%s", tBlockTop);
                 tile1Ptr += l;
                 tile1Len -= l;
@@ -120,9 +120,9 @@ TTetrominoOrientationSummary(
                 tile2Ptr += l;
                 tile2Len -= l;
             }
-            // Shift the tetromino so that 0x8000 will always mask the
+            // Shift the tetromino so that 0x0001 will always mask the
             // next bit on the next iteration:
-            tetromino <<= 1;
+            tetromino >>= 1;
         }
         // Print the two rows of text we accumulated:
         printf("    %s\n", tile1);

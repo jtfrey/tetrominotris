@@ -18,7 +18,7 @@ typedef struct {
 
 typedef struct {
     TBitGridIterator        base;
-    uint8_t                 channelMask;
+    TCell                   channelMask;
 } TBitGridIterator_NC;
 
 //
@@ -27,7 +27,7 @@ bool
 __TBitGridIteratorNext_8b_1C(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
@@ -106,13 +106,13 @@ bool
 __TBitGridIteratorNext_8b_NC(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
     if ( iterator->j < iterator->dimensions.h ) {
-        uint8_t     channelMask, channelIdx, localValue;
+        TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
         if ( iterator->isStarted ) {
@@ -237,7 +237,7 @@ bool
 __TBitGridIteratorNext_16b_1C(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
@@ -316,13 +316,13 @@ bool
 __TBitGridIteratorNext_16b_NC(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
     if ( iterator->j < iterator->dimensions.h ) {
-        uint8_t     channelMask, channelIdx, localValue;
+        TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
         if ( iterator->isStarted ) {
@@ -447,7 +447,7 @@ bool
 __TBitGridIteratorNext_32b_1C(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
@@ -526,13 +526,13 @@ bool
 __TBitGridIteratorNext_32b_NC(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
     if ( iterator->j < iterator->dimensions.h ) {
-        uint8_t     channelMask, channelIdx, localValue;
+        TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
         if ( iterator->isStarted ) {
@@ -657,7 +657,7 @@ bool
 __TBitGridIteratorNext_64b_1C(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
@@ -736,13 +736,13 @@ bool
 __TBitGridIteratorNext_64b_NC(
     TBitGridIterator    *iterator,
     TGridPos            *outP,
-    uint8_t             *value
+    TCell               *value
 )
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
     if ( iterator->j < iterator->dimensions.h ) {
-        uint8_t     channelMask, channelIdx, localValue;
+        TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
         if ( iterator->isStarted ) {
@@ -865,7 +865,7 @@ __TBitGridIteratorNextFullRow_64b_NC(
 ////
 //
 
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_8b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -873,7 +873,7 @@ __TBitGridGetCellValueAtIndex_8b_1C(
 {
     return ((bitGrid->grid[0].b8[I.W]) & (1 << I.b)) != 0;
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_8b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -882,13 +882,13 @@ __TBitGridGetCellValueAtIndex_8b_2C(
     return ((((bitGrid->grid[1].b8[I.W]) & (1 << I.b)) != 0) << 1) |
             (((bitGrid->grid[0].b8[I.W]) & (1 << I.b)) != 0);
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_8b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I
 )
 {
-    uint8_t         outValue = 0;
+    TCell           outValue = 0;
     unsigned int    c = bitGrid->dimensions.nChannels;
     
     while ( c-- )
@@ -900,7 +900,7 @@ void
 __TBitGridSetCellValueAtIndex_8b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value )
@@ -912,7 +912,7 @@ void
 __TBitGridSetCellValueAtIndex_8b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value & 0x1 )
@@ -928,7 +928,7 @@ void
 __TBitGridSetCellValueAtIndex_8b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     unsigned int    c = 0;
@@ -945,7 +945,7 @@ __TBitGridSetCellValueAtIndex_8b_NC(
 
 //
 
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_16b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -953,7 +953,7 @@ __TBitGridGetCellValueAtIndex_16b_1C(
 {
     return ((bitGrid->grid[0].b16[I.W]) & (1 << I.b)) != 0;
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_16b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -962,13 +962,13 @@ __TBitGridGetCellValueAtIndex_16b_2C(
     return ((((bitGrid->grid[1].b16[I.W]) & (1 << I.b)) != 0) << 1) |
             (((bitGrid->grid[0].b16[I.W]) & (1 << I.b)) != 0);
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_16b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I
 )
 {
-    uint8_t         outValue = 0;
+    TCell           outValue = 0;
     unsigned int    c = bitGrid->dimensions.nChannels;
     
     while ( c-- )
@@ -980,7 +980,7 @@ void
 __TBitGridSetCellValueAtIndex_16b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value )
@@ -992,7 +992,7 @@ void
 __TBitGridSetCellValueAtIndex_16b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value & 0x1 )
@@ -1008,7 +1008,7 @@ void
 __TBitGridSetCellValueAtIndex_16b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     unsigned int    c = 0;
@@ -1025,7 +1025,7 @@ __TBitGridSetCellValueAtIndex_16b_NC(
 
 //
 
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_32b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -1033,7 +1033,7 @@ __TBitGridGetCellValueAtIndex_32b_1C(
 {
     return ((bitGrid->grid[0].b32[I.W]) & (1 << I.b)) != 0;
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_32b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -1042,13 +1042,13 @@ __TBitGridGetCellValueAtIndex_32b_2C(
     return ((((bitGrid->grid[1].b32[I.W]) & (1 << I.b)) != 0) << 1) |
             (((bitGrid->grid[0].b32[I.W]) & (1 << I.b)) != 0);
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_32b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I
 )
 {
-    uint8_t         outValue = 0;
+    TCell           outValue = 0;
     unsigned int    c = bitGrid->dimensions.nChannels;
     
     while ( c-- )
@@ -1060,7 +1060,7 @@ void
 __TBitGridSetCellValueAtIndex_32b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value )
@@ -1072,7 +1072,7 @@ void
 __TBitGridSetCellValueAtIndex_32b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value & 0x1 )
@@ -1088,7 +1088,7 @@ void
 __TBitGridSetCellValueAtIndex_32b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     unsigned int    c = 0;
@@ -1105,7 +1105,7 @@ __TBitGridSetCellValueAtIndex_32b_NC(
 
 //
 
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_64b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -1113,7 +1113,7 @@ __TBitGridGetCellValueAtIndex_64b_1C(
 {
     return ((bitGrid->grid[0].b64[I.W]) & (1 << I.b)) != 0;
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_64b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I
@@ -1122,13 +1122,13 @@ __TBitGridGetCellValueAtIndex_64b_2C(
     return ((((bitGrid->grid[1].b64[I.W]) & (1 << I.b)) != 0) << 1) |
             (((bitGrid->grid[0].b64[I.W]) & (1 << I.b)) != 0);
 }
-uint8_t
+TCell  
 __TBitGridGetCellValueAtIndex_64b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I
 )
 {
-    uint8_t         outValue = 0;
+    TCell           outValue = 0;
     unsigned int    c = bitGrid->dimensions.nChannels;
     
     while ( c-- )
@@ -1140,7 +1140,7 @@ void
 __TBitGridSetCellValueAtIndex_64b_1C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value )
@@ -1152,7 +1152,7 @@ void
 __TBitGridSetCellValueAtIndex_64b_2C(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     if ( value & 0x1 )
@@ -1168,7 +1168,7 @@ void
 __TBitGridSetCellValueAtIndex_64b_NC(
     TBitGrid        *bitGrid,
     TGridIndex      I,
-    uint8_t         value
+    TCell           value
 )
 {
     unsigned int    c = 0;
@@ -1187,9 +1187,10 @@ __TBitGridSetCellValueAtIndex_64b_NC(
 
 TBitGrid*
 TBitGridCreate(
-    unsigned int    nChannels,
-    unsigned int    w,
-    unsigned int    h
+    TBitGridWordSize    wordSize,
+    unsigned int        nChannels,
+    unsigned int        w,
+    unsigned int        h
 )
 {
     TBitGrid        *newBitGrid = NULL;
@@ -1198,73 +1199,98 @@ TBitGridCreate(
     
     if ( nChannels > 8 || nChannels < 1 ) return NULL;
     
-    //
-    // Determine the optimal word size for the grid width:
-    //
-    switch ( (w - 1) / 8 ) {
-        case 0:
+    if ( (w < 8) || (h < 12) ) return NULL;
+    
+    switch ( wordSize ) {
+        case TBitGridWordSizeForce8Bit:
             nBitsPerWord = 8;
-            nWordsPerRow = 1;
-#ifdef TBITGRID_DEBUG
-            printf("Defaulting to 8-bit word\n");
-#endif
+            nWordsPerRow = (w + 7) / 8;
             break;
-        case 1:
+        case TBitGridWordSizeForce16Bit:
             nBitsPerWord = 16;
-            nWordsPerRow = 1;
-#ifdef TBITGRID_DEBUG
-            printf("Defaulting to 16-bit word\n");
-#endif
+            nWordsPerRow = (w + 15) / 16;
             break;
-        case 3:
+        case TBitGridWordSizeForce32Bit:
             nBitsPerWord = 32;
-            nWordsPerRow = 1;
-#ifdef TBITGRID_DEBUG
-            printf("Defaulting to 32-bit word\n");
-#endif
+            nWordsPerRow = (w + 31) / 32;
             break;
-        case 4:
-        case 5:
-        case 6:
-        case 7:
+        case TBitGridWordSizeForce64Bit:
             nBitsPerWord = 64;
-            nWordsPerRow = 1;
-#ifdef TBITGRID_DEBUG
-            printf("Defaulting to 64-bit word\n");
-#endif
+            nWordsPerRow = (w + 63) / 64;
             break;
-        default: {
-            struct {
-                uint8_t         nBitsPerWord;
-                unsigned int    nWord;
-                unsigned int    nExtraBits;
-            } swap, byWordSize[4] = {
-                                        {  8,  (w + 7) / 8,  (((w + 7) / 8) << 3) - w },
-                                        { 16, (w + 15) / 16, (((w + 15) / 16) << 4) - w },
-                                        { 32, (w + 31) / 32, (((w + 31) / 32) << 5) - w },
-                                        { 64, (w + 63) / 64, (((w + 63) / 64) << 6) - w },
-                                    };
+            
+        default:
+        case TBitGridWordSizeDefault: {
+            //
+            // Determine the optimal word size for the grid width:
+            //
+            switch ( (w - 1) / 8 ) {
+                case 0:
+                    nBitsPerWord = 8;
+                    nWordsPerRow = 1;
+#ifdef TBITGRID_DEBUG
+                    printf("Defaulting to 8-bit word\n");
+#endif
+                    break;
+                case 1:
+                    nBitsPerWord = 16;
+                    nWordsPerRow = 1;
+#ifdef TBITGRID_DEBUG
+                    printf("Defaulting to 16-bit word\n");
+#endif
+                    break;
+                case 3:
+                    nBitsPerWord = 32;
+                    nWordsPerRow = 1;
+#ifdef TBITGRID_DEBUG
+                    printf("Defaulting to 32-bit word\n");
+#endif
+                    break;
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                    nBitsPerWord = 64;
+                    nWordsPerRow = 1;
+#ifdef TBITGRID_DEBUG
+                    printf("Defaulting to 64-bit word\n");
+#endif
+                    break;
+                default: {
+                    struct {
+                        uint8_t         nBitsPerWord;
+                        unsigned int    nWord;
+                        unsigned int    nExtraBits;
+                    } swap, byWordSize[4] = {
+                                                {  8,  (w + 7) / 8,  (((w + 7) / 8) << 3) - w },
+                                                { 16, (w + 15) / 16, (((w + 15) / 16) << 4) - w },
+                                                { 32, (w + 31) / 32, (((w + 31) / 32) << 5) - w },
+                                                { 64, (w + 63) / 64, (((w + 63) / 64) << 6) - w },
+                                            };
 #define COMPARE_AND_SWAP(I,J) \
-            if ( (byWordSize[I].nExtraBits > byWordSize[J].nExtraBits) || \
-                 ((byWordSize[I].nExtraBits == byWordSize[J].nExtraBits) && \
-                  (byWordSize[I].nBitsPerWord < byWordSize[J].nBitsPerWord)) ) \
-            { \
-                swap = byWordSize[I]; byWordSize[I] = byWordSize[J]; byWordSize[J] = swap; \
-            }
-            COMPARE_AND_SWAP(0,1);
-            COMPARE_AND_SWAP(2,3);
-            COMPARE_AND_SWAP(0,2);
-            COMPARE_AND_SWAP(1,3);
-            COMPARE_AND_SWAP(1,2);
+                    if ( (byWordSize[I].nExtraBits > byWordSize[J].nExtraBits) || \
+                         ((byWordSize[I].nExtraBits == byWordSize[J].nExtraBits) && \
+                          (byWordSize[I].nBitsPerWord < byWordSize[J].nBitsPerWord)) ) \
+                    { \
+                        swap = byWordSize[I]; byWordSize[I] = byWordSize[J]; byWordSize[J] = swap; \
+                    }
+                    COMPARE_AND_SWAP(0,1);
+                    COMPARE_AND_SWAP(2,3);
+                    COMPARE_AND_SWAP(0,2);
+                    COMPARE_AND_SWAP(1,3);
+                    COMPARE_AND_SWAP(1,2);
 #undef COMPARE_AND_SWAP
 #ifdef TBITGRID_DEBUG
-            printf("%2hhu %4u %4u\n", byWordSize[0].nBitsPerWord, byWordSize[0].nWord, byWordSize[0].nExtraBits);
-            printf("%2hhu %4u %4u\n", byWordSize[1].nBitsPerWord, byWordSize[1].nWord, byWordSize[1].nExtraBits);
-            printf("%2hhu %4u %4u\n", byWordSize[2].nBitsPerWord, byWordSize[2].nWord, byWordSize[2].nExtraBits);
-            printf("%2hhu %4u %4u\n", byWordSize[3].nBitsPerWord, byWordSize[3].nWord, byWordSize[3].nExtraBits);
+                    printf("%2hhu %4u %4u\n", byWordSize[0].nBitsPerWord, byWordSize[0].nWord, byWordSize[0].nExtraBits);
+                    printf("%2hhu %4u %4u\n", byWordSize[1].nBitsPerWord, byWordSize[1].nWord, byWordSize[1].nExtraBits);
+                    printf("%2hhu %4u %4u\n", byWordSize[2].nBitsPerWord, byWordSize[2].nWord, byWordSize[2].nExtraBits);
+                    printf("%2hhu %4u %4u\n", byWordSize[3].nBitsPerWord, byWordSize[3].nWord, byWordSize[3].nExtraBits);
 #endif
-            nBitsPerWord = byWordSize[0].nBitsPerWord;
-            nWordsPerRow = byWordSize[0].nWord;
+                    nBitsPerWord = byWordSize[0].nBitsPerWord;
+                    nWordsPerRow = byWordSize[0].nWord;
+                    break;
+                }
+            }
             break;
         }
     }
@@ -1392,7 +1418,7 @@ TBitGridDestroy(
 void
 TBitGridFill(
     TBitGrid    *bitGrid,
-    uint8_t     value
+    TCell       value
 )
 {
     unsigned int    channelIdx = 0, channelMask = 1;
@@ -1471,19 +1497,524 @@ TBitGridClearLines(
 }
 
 //
+
+static inline void
+__TBitGridExtract4x4AtPosition_8b(
+    TBitGrid        *bitGrid,
+    unsigned int    channelIdx,
+    int             j0,
+    int             j4,
+    int             i0,
+    int             i4,
+    int             baseW,
+    int             inRowb,
+    int             inRowBitCount,
+    uint16_t        *extracted4x4Value,
+    uint16_t        *extracted4x4Mask
+)
+{
+    uint16_t        out4x4 = 0xFFFF;
+    unsigned int    nRow = j4 - j0, inRowbHi = inRowb + inRowBitCount;
+    uint16_t        isExtractedMask;
+    uint16_t        extracted4x4;
+    
+    // Extract inRowBitCount bits at W,b
+    if ( inRowbHi <= 8 ) {
+        //  All in a single word:
+        uint8_t     selectMask = (((uint8_t)1 << (inRowb + inRowBitCount)) - 1) & ~((1 << inRowb) - 1);
+        int         shift;
+        
+        extracted4x4 = (uint16_t)((*(bitGrid->grid[channelIdx].b8 + baseW) & selectMask) >> inRowb);
+        isExtractedMask = 0x00F;
+        if ( --nRow > 0 ) {
+            shift = 4 - inRowb;
+            if ( shift <= 0 )
+                extracted4x4 |= (uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+            else if ( shift > 0 )
+                extracted4x4 |= (uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift += 4;
+                if ( shift <= 0 )
+                    extracted4x4 |= (uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                else if ( shift > 0 )
+                    extracted4x4 |= (uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift += 4;
+                    if ( shift <= 0 )
+                        extracted4x4 |= (uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                    else if ( shift > 0 )
+                        extracted4x4 |= (uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    } else {
+        // Split across two words:
+        uint8_t     selectMask0 = ~((uint8_t)0xFF >> (8 - inRowb));
+        uint8_t     selectMask1 = (((uint8_t)1 << (inRowbHi - 8)) - 1);
+        int         shift0, shift1 = 8 - inRowb;
+        
+        extracted4x4 = ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW) & selectMask0) >> inRowb) |
+                       ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 1) & selectMask1) << shift1);
+        isExtractedMask = 0x000F;
+        if ( --nRow > 0 ) {
+            shift0 = 4 - inRowb;
+            shift1 += 4;
+            if ( shift0 <= 0 )
+                extracted4x4 |= ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                          ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            else if ( shift0 > 0 )
+                extracted4x4 |= ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                          ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift0 += 4;
+                shift1 += 4;
+                if ( shift0 <= 0 )
+                    extracted4x4 |= ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                              ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                else if ( shift0 > 0 )
+                    extracted4x4 |= ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                              ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift0 += 4;
+                    shift1 += 4;
+                    if ( shift0 <= 0 )
+                        extracted4x4 |= ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                                  ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    else if ( shift0 > 0 )
+                        extracted4x4 |= ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                                  ((uint16_t)(*(bitGrid->grid[channelIdx].b8 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    }
+    *extracted4x4Value = extracted4x4;
+    *extracted4x4Mask = isExtractedMask;
+}
+
+static inline void
+__TBitGridExtract4x4AtPosition_16b(
+    TBitGrid        *bitGrid,
+    unsigned int    channelIdx,
+    int             j0,
+    int             j4,
+    int             i0,
+    int             i4,
+    int             baseW,
+    int             inRowb,
+    int             inRowBitCount,
+    uint16_t        *extracted4x4Value,
+    uint16_t        *extracted4x4Mask
+)
+{
+    uint16_t        out4x4 = 0xFFFF;
+    unsigned int    nRow = j4 - j0, inRowbHi = inRowb + inRowBitCount;
+    uint16_t        isExtractedMask;
+    uint16_t        extracted4x4;
+    
+    // Extract inRowBitCount bits at W,b
+    if ( inRowbHi <= 16 ) {
+        //  All in a single word:
+        uint16_t    selectMask = (((uint16_t)1 << (inRowb + inRowBitCount)) - 1) & ~((1 << inRowb) - 1);
+        int         shift;
+        
+        extracted4x4 = ((*(bitGrid->grid[channelIdx].b16 + baseW) & selectMask) >> inRowb);
+        isExtractedMask = 0x00F;
+        if ( --nRow > 0 ) {
+            shift = 4 - inRowb;
+            if ( shift <= 0 )
+                extracted4x4 |= (*(bitGrid->grid[channelIdx].b16 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+            else if ( shift > 0 )
+                extracted4x4 |= (*(bitGrid->grid[channelIdx].b16 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift += 4;
+                if ( shift <= 0 )
+                    extracted4x4 |= (*(bitGrid->grid[channelIdx].b16 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                else if ( shift > 0 )
+                    extracted4x4 |= (*(bitGrid->grid[channelIdx].b16 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift += 4;
+                    if ( shift <= 0 )
+                        extracted4x4 |= (*(bitGrid->grid[channelIdx].b16 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                    else if ( shift > 0 )
+                        extracted4x4 |= (*(bitGrid->grid[channelIdx].b16 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    } else {
+        // Split across two words:
+        uint16_t    selectMask0 = ~((uint16_t)0xFFFF >> (16 - inRowb));
+        uint16_t    selectMask1 = (((uint16_t)1 << (inRowbHi - 16)) - 1);
+        int         shift0, shift1 = 16 - inRowb;
+        
+        extracted4x4 = ((*(bitGrid->grid[channelIdx].b16 + baseW) & selectMask0) >> inRowb) |
+                       ((*(bitGrid->grid[channelIdx].b16 + baseW + 1) & selectMask1) << shift1);
+        isExtractedMask = 0x000F;
+        if ( --nRow > 0 ) {
+            shift0 = 4 - inRowb;
+            shift1 += 4;
+            if ( shift0 <= 0 )
+                extracted4x4 |= ((*(bitGrid->grid[channelIdx].b16 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                          ((*(bitGrid->grid[channelIdx].b16 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            else if ( shift0 > 0 )
+                extracted4x4 |= ((*(bitGrid->grid[channelIdx].b16 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                          ((*(bitGrid->grid[channelIdx].b16 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift0 += 4;
+                shift1 += 4;
+                if ( shift0 <= 0 )
+                    extracted4x4 |= ((*(bitGrid->grid[channelIdx].b16 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                              ((*(bitGrid->grid[channelIdx].b16 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                else if ( shift0 > 0 )
+                    extracted4x4 |= ((*(bitGrid->grid[channelIdx].b16 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                              ((*(bitGrid->grid[channelIdx].b16 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift0 += 4;
+                    shift1 += 4;
+                    if ( shift0 <= 0 )
+                        extracted4x4 |= ((*(bitGrid->grid[channelIdx].b16 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                                  ((*(bitGrid->grid[channelIdx].b16 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    else if ( shift0 > 0 )
+                        extracted4x4 |= ((*(bitGrid->grid[channelIdx].b16 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                                  ((*(bitGrid->grid[channelIdx].b16 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    }
+    *extracted4x4Value = extracted4x4;
+    *extracted4x4Mask = isExtractedMask;
+}
+
+static inline void
+__TBitGridExtract4x4AtPosition_32b(
+    TBitGrid        *bitGrid,
+    unsigned int    channelIdx,
+    int             j0,
+    int             j4,
+    int             i0,
+    int             i4,
+    int             baseW,
+    int             inRowb,
+    int             inRowBitCount,
+    uint16_t        *extracted4x4Value,
+    uint16_t        *extracted4x4Mask
+)
+{
+    uint16_t        out4x4 = 0xFFFF;
+    unsigned int    nRow = j4 - j0, inRowbHi = inRowb + inRowBitCount;
+    uint16_t        isExtractedMask;
+    uint16_t        extracted4x4;
+    
+    // Extract inRowBitCount bits at W,b
+    if ( inRowbHi <= 32 ) {
+        //  All in a single word:
+        uint32_t    selectMask = (((uint32_t)1 << (inRowb + inRowBitCount)) - 1) & ~((1 << inRowb) - 1);
+        int         shift;
+        
+        extracted4x4 = ((*(bitGrid->grid[channelIdx].b32 + baseW) & selectMask) >> inRowb);
+        isExtractedMask = 0x00F;
+        if ( --nRow > 0 ) {
+            shift = 4 - inRowb;
+            if ( shift <= 0 )
+                extracted4x4 |= (*(bitGrid->grid[channelIdx].b32 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+            else if ( shift > 0 )
+                extracted4x4 |= (*(bitGrid->grid[channelIdx].b32 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift += 4;
+                if ( shift <= 0 )
+                    extracted4x4 |= (*(bitGrid->grid[channelIdx].b32 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                else if ( shift > 0 )
+                    extracted4x4 |= (*(bitGrid->grid[channelIdx].b32 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift += 4;
+                    if ( shift <= 0 )
+                        extracted4x4 |= (*(bitGrid->grid[channelIdx].b32 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                    else if ( shift > 0 )
+                        extracted4x4 |= (*(bitGrid->grid[channelIdx].b32 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    } else {
+        // Split across two words:
+        uint32_t    selectMask0 = ~((uint32_t)0xFFFFFFFF >> (32 - inRowb));
+        uint32_t    selectMask1 = (((uint32_t)1 << (inRowbHi - 32)) - 1);
+        int         shift0, shift1 = 32 - inRowb;
+        
+        extracted4x4 = ((*(bitGrid->grid[channelIdx].b32 + baseW) & selectMask0) >> inRowb) |
+                       ((*(bitGrid->grid[channelIdx].b32 + baseW + 1) & selectMask1) << shift1);
+        isExtractedMask = 0x000F;
+        if ( --nRow > 0 ) {
+            shift0 = 4 - inRowb;
+            shift1 += 4;
+            if ( shift0 <= 0 )
+                extracted4x4 |= ((*(bitGrid->grid[channelIdx].b32 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                          ((*(bitGrid->grid[channelIdx].b32 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            else if ( shift0 > 0 )
+                extracted4x4 |= ((*(bitGrid->grid[channelIdx].b32 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                          ((*(bitGrid->grid[channelIdx].b32 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift0 += 4;
+                shift1 += 4;
+                if ( shift0 <= 0 )
+                    extracted4x4 |= ((*(bitGrid->grid[channelIdx].b32 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                              ((*(bitGrid->grid[channelIdx].b32 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                else if ( shift0 > 0 )
+                    extracted4x4 |= ((*(bitGrid->grid[channelIdx].b32 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                              ((*(bitGrid->grid[channelIdx].b32 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift0 += 4;
+                    shift1 += 4;
+                    if ( shift0 <= 0 )
+                        extracted4x4 |= ((*(bitGrid->grid[channelIdx].b32 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                                  ((*(bitGrid->grid[channelIdx].b32 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    else if ( shift0 > 0 )
+                        extracted4x4 |= ((*(bitGrid->grid[channelIdx].b32 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                                  ((*(bitGrid->grid[channelIdx].b32 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    }
+    *extracted4x4Value = extracted4x4;
+    *extracted4x4Mask = isExtractedMask;
+}
+
+static inline void
+__TBitGridExtract4x4AtPosition_64b(
+    TBitGrid        *bitGrid,
+    unsigned int    channelIdx,
+    int             j0,
+    int             j4,
+    int             i0,
+    int             i4,
+    int             baseW,
+    int             inRowb,
+    int             inRowBitCount,
+    uint16_t        *extracted4x4Value,
+    uint16_t        *extracted4x4Mask
+)
+{
+    uint16_t        out4x4 = 0xFFFF;
+    unsigned int    nRow = j4 - j0, inRowbHi = inRowb + inRowBitCount;
+    uint16_t        isExtractedMask;
+    uint16_t        extracted4x4;
+    
+    // Extract inRowBitCount bits at W,b
+    if ( inRowbHi <= 64 ) {
+        //  All in a single word:
+        uint64_t    selectMask = (((uint64_t)1 << (inRowb + inRowBitCount)) - 1) & ~((1 << inRowb) - 1);
+        int         shift;
+        
+        extracted4x4 = ((*(bitGrid->grid[channelIdx].b64 + baseW) & selectMask) >> inRowb);
+        isExtractedMask = 0x00F;
+        if ( --nRow > 0 ) {
+            shift = 4 - inRowb;
+            if ( shift <= 0 )
+                extracted4x4 |= (*(bitGrid->grid[channelIdx].b64 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+            else if ( shift > 0 )
+                extracted4x4 |= (*(bitGrid->grid[channelIdx].b64 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift += 4;
+                if ( shift <= 0 )
+                    extracted4x4 |= (*(bitGrid->grid[channelIdx].b64 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                else if ( shift > 0 )
+                    extracted4x4 |= (*(bitGrid->grid[channelIdx].b64 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift += 4;
+                    if ( shift <= 0 )
+                        extracted4x4 |= (*(bitGrid->grid[channelIdx].b64 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) >> -shift;
+                    else if ( shift > 0 )
+                        extracted4x4 |= (*(bitGrid->grid[channelIdx].b64 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask) << shift;
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    } else {
+        // Split across two words:
+        uint64_t    selectMask0 = ~((uint64_t)0xFFFFFFFFFFFFFFFF >> (64 - inRowb));
+        uint64_t    selectMask1 = (((uint64_t)1 << (inRowbHi - 64)) - 1);
+        int         shift0, shift1 = 64 - inRowb;
+        
+        extracted4x4 = ((*(bitGrid->grid[channelIdx].b64 + baseW) & selectMask0) >> inRowb) |
+                       ((*(bitGrid->grid[channelIdx].b64 + baseW + 1) & selectMask1) << shift1);
+        isExtractedMask = 0x000F;
+        if ( --nRow > 0 ) {
+            shift0 = 4 - inRowb;
+            shift1 += 4;
+            if ( shift0 <= 0 )
+                extracted4x4 |= ((*(bitGrid->grid[channelIdx].b64 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                          ((*(bitGrid->grid[channelIdx].b64 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            else if ( shift0 > 0 )
+                extracted4x4 |= ((*(bitGrid->grid[channelIdx].b64 + baseW + bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                          ((*(bitGrid->grid[channelIdx].b64 + baseW + bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+            isExtractedMask = 0x00FF;
+            if ( --nRow > 0 ) {
+                shift0 += 4;
+                shift1 += 4;
+                if ( shift0 <= 0 )
+                    extracted4x4 |= ((*(bitGrid->grid[channelIdx].b64 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                              ((*(bitGrid->grid[channelIdx].b64 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                else if ( shift0 > 0 )
+                    extracted4x4 |= ((*(bitGrid->grid[channelIdx].b64 + baseW + 2 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                              ((*(bitGrid->grid[channelIdx].b64 + baseW + 2 * bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                isExtractedMask = 0x0FFF;
+                if ( --nRow > 0 ) {
+                    shift0 += 4;
+                    shift1 += 4;
+                    if ( shift0 <= 0 )
+                        extracted4x4 |= ((*(bitGrid->grid[channelIdx].b64 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) >> -shift0) |
+                                  ((*(bitGrid->grid[channelIdx].b64 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    else if ( shift0 > 0 )
+                        extracted4x4 |= ((*(bitGrid->grid[channelIdx].b64 + baseW + 3 * bitGrid->dimensions.nWordsPerRow) & selectMask0) << shift0) |
+                                  ((*(bitGrid->grid[channelIdx].b64 + baseW + 3* bitGrid->dimensions.nWordsPerRow + 1) & selectMask1) << shift1);
+                    isExtractedMask = 0xFFFF;
+                }
+            }
+        }
+    }
+    *extracted4x4Value = extracted4x4;
+    *extracted4x4Mask = isExtractedMask;
+}
+
+uint16_t
+TBitGridExtract4x4AtPosition(
+    TBitGrid        *bitGrid,
+    unsigned int    channelIdx,
+    TGridPos        P
+)
+{
+    uint16_t    out4x4, out4x4Mask;
+    int         baseW, inRowb, inRowBitCount;
+    int         i0, i4, j0, j4;
+    
+    if ( channelIdx-- > bitGrid->dimensions.nChannels ) return 0xFFFF;
+    
+    // Off-grid:
+    if ( P.i < -3 || P.j < -3 ) return 0xFFFF;
+    if ( ((P.i > 0) && (P.i >= bitGrid->dimensions.w)) || ((P.j > 0) && (P.j >= bitGrid->dimensions.h)) ) return 0xFFFF;
+    
+    // Row and column range -- clamp at the right and bottom:
+    j0 = P.j; j4 = j0 + 4; if ( j4 > bitGrid->dimensions.h ) j4 = bitGrid->dimensions.h;
+    i0 = P.i; i4 = i0 + 4; if ( i4 > bitGrid->dimensions.w ) i4 = bitGrid->dimensions.w;
+    inRowBitCount = i4 - i0;
+    
+    // Calculate the word/bit offset at which we'll start extracting bits:
+    baseW  = ((P.j < 0) ? (P.j + 4) : P.j) * bitGrid->dimensions.nWordsPerRow +
+             ((P.i < 0) ? 0 : P.i) / bitGrid->dimensions.nBitsPerWord;
+    inRowb = ((P.i < 0) ? 0 : P.i) % bitGrid->dimensions.nBitsPerWord;
+    
+    switch ( bitGrid->dimensions.nBitsPerWord ) {
+        case 8:
+            __TBitGridExtract4x4AtPosition_8b(bitGrid, channelIdx, j0, j4, i0, i4, baseW, inRowb, inRowBitCount, &out4x4, &out4x4Mask);
+            break;
+        case 16:
+            __TBitGridExtract4x4AtPosition_16b(bitGrid, channelIdx, j0, j4, i0, i4, baseW, inRowb, inRowBitCount, &out4x4, &out4x4Mask);
+            break;
+        case 32:
+            __TBitGridExtract4x4AtPosition_32b(bitGrid, channelIdx, j0, j4, i0, i4, baseW, inRowb, inRowBitCount, &out4x4, &out4x4Mask);
+            break;
+        case 64:
+            __TBitGridExtract4x4AtPosition_64b(bitGrid, channelIdx, j0, j4, i0, i4, baseW, inRowb, inRowBitCount, &out4x4, &out4x4Mask);
+            break;
+    }
+    
+    // Left-right shifts:
+    i4 = i0 + 4;
+    if ( i0 < 0 ) {
+        out4x4 = ((0xFFFF & ~out4x4Mask) | out4x4);
+        while ( i0++ < 0 ) {
+            // Take the left 3 columns and shift them right, then
+            // set the 0th column to all occupied (since it's off
+            // the grid):
+            out4x4 = (out4x4 & 0x7777) << 1 | 0x1111;
+        }
+    } else if ( i4 > bitGrid->dimensions.w ) {
+        // Shift the out4x4Mask to only keep the appropriate columns:
+        i4 -= bitGrid->dimensions.w;
+        while ( i4-- > 0 ) out4x4Mask = (out4x4Mask >> 1) & 0x7777;
+        out4x4 = (out4x4 & out4x4Mask) | (0xFFFF & ~out4x4Mask);
+    } else {
+        out4x4 = ((0xFFFF & ~out4x4Mask) | out4x4);
+    }
+    
+    return out4x4;
+}
+
+//
+
+void
+TBitGridChannelSummary(
+    TBitGrid        *bitGrid,
+    unsigned int    channelIdx
+)
+{
+    TBitGridIterator    *iterator = TBitGridIteratorCreate(bitGrid, channelIdx);
+    unsigned int        i, j = bitGrid->dimensions.h;
+    TGridPos            P;
+    
+    printf("\n");
+    while ( j-- ) {
+        //
+        // The Unicode big box uses 3 bytes for each character in UTF-8, so
+        // we need to reserve 9 bytes per block per line:
+        //
+        static uint8_t      tBlockTop[10] = { 0xE2, 0x94, 0x8F, 0xE2, 0x94, 0x81, 0xE2, 0x94, 0x93, '\0' };
+        static uint8_t      tBlockBot[10] = { 0xE2, 0x94, 0x97, 0xE2, 0x94, 0x81, 0xE2, 0x94, 0x9B, '\0' };
+        char                line1[bitGrid->dimensions.w * 9 + 1], *line1Ptr = line1;
+        char                line2[bitGrid->dimensions.w * 9 + 1], *line2Ptr = line2;
+        int                 line1Len = sizeof(line1), line2Len = sizeof(line2);
+        
+        i = bitGrid->dimensions.w;
+        while ( i-- ) {
+            int     l;
+            TCell   value;
+            
+            TBitGridIteratorNext(iterator, &P, &value);
+            if ( value ) {
+                l = snprintf(line1Ptr, line1Len, "%s", (const char*)tBlockTop); line1Len -= l; line1Ptr += l;
+                l = snprintf(line2Ptr, line2Len, "%s", (const char*)tBlockBot); line2Len -= l; line2Ptr += l;
+            } else {
+                l = snprintf(line1Ptr, line1Len, "   "); line1Len -= l; line1Ptr += l;
+                l = snprintf(line2Ptr, line2Len, "   "); line2Len -= l; line2Ptr += l;
+            }
+        }
+        printf("%s\n%s\n", line1, line2);
+    }
+    TBitGridIteratorDestroy(iterator);
+}
+
+//
 ////
 //
 
 TBitGridIterator*
 TBitGridIteratorCreate(
     TBitGrid    *bitGrid,
-    uint8_t     channelMask
+    TCell       channelMask
 )
 {
     size_t              gridBytes = bitGrid->dimensions.nChannels * sizeof(TBitGridChannelPtr);
     TBitGridIterator    *iterator = NULL;
     unsigned int        nChannelsEnabled = 0;
-    uint8_t             channelMaskCopy;
+    TCell               channelMaskCopy;
     uint16_t            validChannelsMask = (1 << bitGrid->dimensions.nChannels) - 1;
     
     channelMask &= validChannelsMask;
@@ -1585,18 +2116,18 @@ main()
     TBitGridIterator*   iter;
     TBitGrid            *gameBoard;
     TGridPos            P;
-    uint8_t             value;
+    TCell               value;
     unsigned int        i, j;
     
     // Test out a single-bit basic game board:
-    gameBoard = TBitGridCreate(4, 10, 20);
+    gameBoard = TBitGridCreate(TBitGridWordSizeForce32Bit, 4, 10, 20);
     
     j = 0;
     while ( j < 20 ) {
         i = 0;
         while ( i < 10 ) {
             if ( ! (i % 2) || ! (j % 5) ) {
-                uint8_t     v = 0x8 | (((i % 2) == 0) << 1) | ((j % 5) == 0) | ((random() % 2) << 2);
+                TCell       v = 0x8 | (((i % 2) == 0) << 1) | ((j % 5) == 0) | ((random() % 2) << 2);
                 TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, i, j), v);
             }
             i++;

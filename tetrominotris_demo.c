@@ -1,76 +1,75 @@
 
 #include "TTetrominos.h"
-#include "TBoard.h"
+#include "TBitGrid.h"
+#include "TCell.h"
 
 int
 main()
 {
-    TBoard      *ourBoard = TBoardCreate(10, 20);
+    TBitGrid    *ourBoard = TBitGridCreate(TBitGridWordSizeForce64Bit, 1, 10, 20);
     TGridPos    P;
     TGridIndex  I;
     
-    P = TGridPosMake(0,0); I = TBoardGridPosToIndex(ourBoard, P);
+    P = TGridPosMake(0,0); I = TBitGridPosToIndex(ourBoard, P);
     printf("P = { %u, %u } => I = { %u, %u }\n", P.i, P.j, I.W, I.b);
     
-    P = TBoardGridIndexToPos(ourBoard, I);
+    P = TBitGridIndexToPos(ourBoard, I);
     printf("I = { %u, %u } => P = { %u, %u }\n", I.W, I.b, P.i, P.j);
     
-    P = TGridPosMake(5,10); I = TBoardGridPosToIndex(ourBoard, P);
+    P = TGridPosMake(5,10); I = TBitGridPosToIndex(ourBoard, P);
     printf("P = { %u, %u } => I = { %u, %u }\n", P.i, P.j, I.W, I.b);
-    P = TGridPosMake(6,10); I = TBoardGridPosToIndex(ourBoard, P);
+    P = TGridPosMake(6,10); I = TBitGridPosToIndex(ourBoard, P);
     printf("P = { %u, %u } => I = { %u, %u }\n", P.i, P.j, I.W, I.b);
-    P = TGridPosMake(6,11); I = TBoardGridPosToIndex(ourBoard, P);
+    P = TGridPosMake(6,11); I = TBitGridPosToIndex(ourBoard, P);
     printf("P = { %u, %u } => I = { %u, %u }\n", P.i, P.j, I.W, I.b);
     
-    TBoardFill(ourBoard, false);
+    TBitGridFill(ourBoard, false);
     
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 2, 10), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 3, 10), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 4, 10), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 3, 11), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 2, 10), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 3, 10), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 4, 10), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 3, 11), true);
     
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 8, 17), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 8, 17), true);
     
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 0, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 1, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 2, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 3, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 4, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 5, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 6, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 7, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 8, 18), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 9, 18), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 0, 18), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 1, 18), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 4, 18), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 6, 18), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 7, 18), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 8, 18), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 9, 18), true);
     
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 0, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 1, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 2, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 3, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 4, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 5, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 6, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 7, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 8, 19), true);
-    TBoardSetValueAtGridIndex(ourBoard, TBoardGridIndexMakeWithPos(ourBoard, 9, 19), true);
-    TBoardSummary(ourBoard);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 0, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 1, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 2, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 3, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 4, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 5, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 6, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 7, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 8, 19), true);
+    TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 9, 19), true);
+    TBitGridChannelSummary(ourBoard, 1);
     
-    TBoardIterator  ourScanner = TBoardIteratorMake(ourBoard);
-    bool            foundCell, cellVal;
-    unsigned int    rowVal;
+    TBitGridIterator    *ourScanner = TBitGridIteratorCreate(ourBoard, 1);
+    bool                foundCell;
+    TCell               cellVal;
+    unsigned int        rowVal;
     
-    printf("TBoardIterator - fast scanner initialized\n");
-    while ( (foundCell = TBoardIteratorNext(&ourScanner, &cellVal)) && ! cellVal ) {}
+    printf("TBitGridIterator - fast scanner initialized\n");
+    while ( (foundCell = TBitGridIteratorNext(ourScanner, &P, &cellVal)) && ! cellVal ) {}
     if ( foundCell ) {
-        printf("TBoardIterator - fast scanner next true at position (%u,%u)\n", ourScanner.i, ourScanner.j);
+        printf("TBitGridIterator - fast scanner next true at position (%u,%u)\n", P.i, P.j);
     }
+    TBitGridIteratorDestroy(ourScanner);
     
-    ourScanner = TBoardIteratorMake(ourBoard);
-    printf("TBoardIterator - fast scanner reinitialized\n");
-    if ( TBoardIteratorNextFullRow(&ourScanner, &rowVal) ) {
-        printf("TBoardIterator - fast scanner found full row at position %u\n", rowVal);
+    ourScanner = TBitGridIteratorCreate(ourBoard, 1);
+    printf("TBitGridIterator - fast scanner reinitialized\n");
+    if ( TBitGridIteratorNextFullRow(ourScanner, &rowVal) ) {
+        printf("TBitGridIterator - fast scanner found full row at position %u\n", rowVal);
     }
-    
-    TBoardDestroy(ourBoard);
+    TBitGridIteratorDestroy(ourScanner);
     
     printf("\n");
     
@@ -98,7 +97,6 @@ main()
     printf("\n");
     TTetrominoSummary(TTetrominoShiftRight(TTetrominos[5]));
     printf("\n");
-    exit(0);
     
     //
     // Demonstrate shifting of the square tetromino around its unit cell
@@ -131,4 +129,18 @@ main()
     tetromino = TTetrominoOrientationShiftRight(tetromino);
     printf("TTetromino[0,0] Shifted right again:\n");
     TTetrominoOrientationSummary(tetromino);
+    
+    // Load blocks of the grid:
+    printf("\n-----\n");
+    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 1, TGridPosMake(0, 16));
+    TTetrominoOrientationSummary(tetromino);
+    printf("\n");
+    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 1, TGridPosMake(4, 17));
+    TTetrominoOrientationSummary(tetromino);
+    printf("\n");
+    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 1, TGridPosMake(5, 16));
+    TTetrominoOrientationSummary(tetromino);
+    
+    
+    TBitGridDestroy(ourBoard);
 }
