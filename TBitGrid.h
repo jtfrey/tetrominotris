@@ -257,6 +257,8 @@ void TBitGridFill(TBitGrid *bitGrid, TCell value);
 
 uint16_t TBitGridExtract4x4AtPosition(TBitGrid *bitGrid, unsigned int channelIdx, TGridPos P);
 
+void TBitGridSet4x4AtPosition(TBitGrid *bitGrid, unsigned int channelIdx, TGridPos P, uint16_t in4x4);
+
 void TBitGridChannelSummary(TBitGrid *bitGrid, unsigned int channelIdx);
 
 

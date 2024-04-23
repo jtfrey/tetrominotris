@@ -3,16 +3,12 @@
 #include "TBitGrid.h"
 #include "TSprite.h"
 #include "TScoreboard.h"
+#include "TGameEngine.h"
 #include "tui_window.h"
 
 #include <locale.h>
 
 //
-
-typedef struct {
-    TBitGrid    *theBoard;
-    TSprite     *thePiece;
-} TGameBoardContext;
 
 void
 gameBoardDraw(
@@ -24,39 +20,39 @@ gameBoardDraw(
     static uint8_t      tBlockTop[10] = { 0xE2, 0x94, 0x8F, 0xE2, 0x94, 0x81, 0xE2, 0x94, 0x93, '\0' };
     static uint8_t      tBlockBot[10] = { 0xE2, 0x94, 0x97, 0xE2, 0x94, 0x81, 0xE2, 0x94, 0x9B, '\0' };
     
-#define CONTEXT     ((TGameBoardContext*)context)
-#define THE_BOARD   CONTEXT->theBoard
-#define THE_PIECE   CONTEXT->thePiece
+#define GAME_ENGINE ((TGameEngine*)context)
+#define THE_BOARD   GAME_ENGINE->gameBoard
+#define THE_PIECE   GAME_ENGINE->currentSprite
     
     int                 i, j, spriteILo, spriteIHi, spriteJLo, spriteJHi, extraIShift = 0;
     chtype              line1[THE_BOARD->dimensions.w * 4 + 1];
     chtype              line2[THE_BOARD->dimensions.w * 4 + 1];
     TBitGridIterator    *gridScanner = TBitGridIteratorCreate(THE_BOARD, 1);
     TGridPos            P;
-    uint16_t            spriteBits = TSpriteGet4x4(THE_PIECE);\
+    uint16_t            spriteBits = TSpriteGet4x4(&THE_PIECE);
     
     // Skip any lines that are off-screen above the board:
-    if ( THE_PIECE->P.j < 0 ) {
-        spriteBits >>= 4 * (-THE_PIECE->P.j);
+    if ( THE_PIECE.P.j < 0 ) {
+        spriteBits >>= 4 * (-THE_PIECE.P.j);
         spriteJLo = 0;
-        spriteJHi = 4 + THE_PIECE->P.j;
+        spriteJHi = 4 + THE_PIECE.P.j;
     } else {
-        spriteJLo = THE_PIECE->P.j;
+        spriteJLo = THE_PIECE.P.j;
         spriteJHi = 4 + spriteJLo;
     }
     
     // If the piece is off-screen to the left then force a
     // left-shift:
-    if ( THE_PIECE->P.i < 0 ) {
-        int     steps = THE_PIECE->P.i;
+    if ( THE_PIECE.P.i < 0 ) {
+        int     steps = THE_PIECE.P.i;
         
         while ( steps++ < 0 )
             spriteBits = (spriteBits & 0xEEEE) >> 1;
         spriteILo = 0;
-        spriteIHi = 4 + THE_PIECE->P.i;
-        extraIShift = -THE_PIECE->P.i;
+        spriteIHi = 4 + THE_PIECE.P.i;
+        extraIShift = -THE_PIECE.P.i;
     } else {
-        spriteILo = THE_PIECE->P.i;
+        spriteILo = THE_PIECE.P.i;
         spriteIHi = 4 + spriteILo;
         extraIShift = (spriteIHi > THE_BOARD->dimensions.w) ? (spriteIHi - THE_BOARD->dimensions.w) : 0;
     }
@@ -98,7 +94,7 @@ gameBoardDraw(
 
 #undef THE_PIECE
 #undef THE_BOARD
-#undef CONTEXT
+#undef GAME_ENGINE
 }
 
 //
@@ -127,31 +123,6 @@ drawGameTitle(
 
 //
 
-typedef struct {
-    TScoreboard *scoreboard;
-    uint16_t    tetrominoReps[TTetrominosCount];
-} TStatsData;
-
-static inline TStatsData
-TStatsDataMake(
-    TScoreboard *scoreboard
-)
-{
-    TStatsData  newStatsData = {
-                    .scoreboard = scoreboard,
-                    .tetrominoReps = {
-                        TTetrominoOrientationShiftUp(TTetrominosExtractOrientation(2, 3)),
-                        TTetrominoOrientationShiftLeft(TTetrominoOrientationShiftUp(TTetrominosExtractOrientation(6, 3))),
-                        TTetrominoOrientationShiftLeft(TTetrominoOrientationShiftUp(TTetrominosExtractOrientation(4, 1))),
-                        TTetrominoOrientationShiftUp(TTetrominosExtractOrientation(0, 0)),
-                        TTetrominoOrientationShiftLeft(TTetrominoOrientationShiftUp(TTetrominosExtractOrientation(3, 1))),
-                        TTetrominoOrientationShiftLeft(TTetrominoOrientationShiftUp(TTetrominosExtractOrientation(5, 1))),
-                        TTetrominoOrientationShiftUp(TTetrominosExtractOrientation(1, 3))
-                    }
-                };
-    return newStatsData;
-}
-
 void
 statsDraw(
     tui_window_ref  the_window,
@@ -159,19 +130,19 @@ statsDraw(
     const void      *context
 )
 {
-#define THE_STATS_DATA      ((TStatsData*)context)
-#define THE_SCOREBOARD      THE_STATS_DATA->scoreboard
-    unsigned int            tIdx, colorIdx = 0;
+#define GAME_ENGINE ((TGameEngine*)context)
+#define SCOREBOARD  GAME_ENGINE->scoreboard
+    unsigned int    tIdx, colorIdx = 0;
     
     wclear(window_ptr);
     wattron(window_ptr, A_UNDERLINE);
     mvwprintw(window_ptr, 2, 1, "%-20s", "Lines");
     wattroff(window_ptr, A_UNDERLINE);
-    mvwprintw(window_ptr, 3, 2, "   Total%8u", THE_SCOREBOARD->nLinesTotal);
-    mvwprintw(window_ptr, 4, 2, "  Single%8u", THE_SCOREBOARD->nLinesOfType[TScoreboardLineCountTypeSingle]);
-    mvwprintw(window_ptr, 5, 2, "  Double%8u", THE_SCOREBOARD->nLinesOfType[TScoreboardLineCountTypeDouble]);
-    mvwprintw(window_ptr, 6, 2, "  Triple%8u", THE_SCOREBOARD->nLinesOfType[TScoreboardLineCountTypeTriple]);
-    mvwprintw(window_ptr, 7, 2, "    Quad%8u", THE_SCOREBOARD->nLinesOfType[TScoreboardLineCountTypeQuadruple]);
+    mvwprintw(window_ptr, 3, 2, "   Total%8u", SCOREBOARD.nLinesTotal);
+    mvwprintw(window_ptr, 4, 2, "  Single%8u", SCOREBOARD.nLinesOfType[TScoreboardLineCountTypeSingle]);
+    mvwprintw(window_ptr, 5, 2, "  Double%8u", SCOREBOARD.nLinesOfType[TScoreboardLineCountTypeDouble]);
+    mvwprintw(window_ptr, 6, 2, "  Triple%8u", SCOREBOARD.nLinesOfType[TScoreboardLineCountTypeTriple]);
+    mvwprintw(window_ptr, 7, 2, "    Quad%8u", SCOREBOARD.nLinesOfType[TScoreboardLineCountTypeQuadruple]);
     
     wattron(window_ptr, A_UNDERLINE);
     mvwprintw(window_ptr, 9, 1, "%-20s", "Tetrominos");
@@ -182,7 +153,7 @@ statsDraw(
         uint16_t        rep, mask = 0x0001;
         unsigned int    count;
         
-        rep = THE_STATS_DATA->tetrominoReps[tIdx];
+        rep = GAME_ENGINE->terominoRepsForStats[tIdx];
         wmove(window_ptr, 11 + 3 * tIdx, 2);
         count = 4; while ( count-- ) {
             if (rep & mask) {
@@ -194,7 +165,7 @@ statsDraw(
             }
             mask <<= 1;
         }
-        wprintw(window_ptr, "%8u", THE_SCOREBOARD->tetrominosOfType[tIdx]);
+        wprintw(window_ptr, "%8u", SCOREBOARD.tetrominosOfType[tIdx]);
         wmove(window_ptr, 12 + 3 * tIdx, 2);
         count = 4; while ( count-- ) {
             if (rep & mask) {
@@ -209,8 +180,8 @@ statsDraw(
         tIdx++;
         colorIdx = (colorIdx + 1) % 4;
     }
-#undef THE_SCOREBOARD
-#undef THE_STATS_DATA
+#undef SCOREBOARD
+#undef GAME_ENGINE
 }
 
 //
@@ -222,28 +193,26 @@ scoreboardDraw(
     const void      *context
 )
 {
-#define THE_SCOREBOARD      ((TScoreboard*)context)
+#define GAME_ENGINE ((TGameEngine*)context)
+#define SCOREBOARD  GAME_ENGINE->scoreboard
     
     wclear(window_ptr);
     
     wattron(window_ptr, A_UNDERLINE);
         mvwprintw(window_ptr, 2, 2, "%-18s", "Points");
     wattroff(window_ptr, A_UNDERLINE);
-    mvwprintw(window_ptr, 4, 2, "%18u", THE_SCOREBOARD->score);
+    mvwprintw(window_ptr, 4, 2, "%18u", SCOREBOARD.score);
     
     wattron(window_ptr, A_UNDERLINE);
         mvwprintw(window_ptr, 6, 2, "%-18s", "Level");
     wattroff(window_ptr, A_UNDERLINE);
-    mvwprintw(window_ptr, 8, 2, "%18u", THE_SCOREBOARD->level);
+    mvwprintw(window_ptr, 8, 2, "%18u", SCOREBOARD.level);
 
-#undef THE_SCOREBOARD
+#undef SCOREBOARD
+#undef GAME_ENGINE
 }
 
 //
-
-typedef struct {
-    uint16_t        tetromino;
-} TNextUp;
 
 void
 nextTetrominoDraw(
@@ -252,16 +221,15 @@ nextTetrominoDraw(
     const void      *context
 )
 {
-#define NEXT_UP     ((TNextUp*)context)
+#define GAME_ENGINE ((TGameEngine*)context)
     chtype          line1[4 * 4], *line1Ptr = line1;
     chtype          line2[4 * 4], *line2Ptr = line2;
     unsigned int    count, j = 0;
     uint16_t        rep, mask = 0x0001;
-    int             colorIdx = random() % 4;
     
     wclear(window_ptr);
 
-    rep = NEXT_UP->tetromino;
+    rep = TSpriteGet4x4(&GAME_ENGINE->nextSprite);
     
     while ( j < 4 ) {
         line1Ptr = line1, line2Ptr = line2;
@@ -284,7 +252,7 @@ nextTetrominoDraw(
         
         j++;
     }
-#undef NEXT_UP
+#define GAME_ENGINE ((TGameEngine*)context)
 }
 
 //
@@ -296,14 +264,7 @@ main()
     tui_window_ref      gameBoardWindow = NULL, statsWindow = NULL, scoreWindow = NULL,
                         nextTetrominoWindow = NULL;
     int                 keyCh, screenHeight, screenWidth;
-    TBitGrid            *gameBoard = NULL;
-    TScoreboard         gameScoreboard;
-    TStatsData          statsData = TStatsDataMake(&gameScoreboard);
-    TSprite             thePiece = TSpriteMake(TTetrominos[4], TGridPosMake(0,-1), 1);
-    TGameBoardContext   theGameContext;
-    TNextUp             nextUp = {
-                        .tetromino = TTetrominosExtractOrientation(1, 3)
-                    };
+    TGameEngine         *gameEngine = NULL;
     
     setlocale(LC_ALL, "");
     
@@ -344,45 +305,41 @@ main()
     init_pair(3, COLOR_WHITE, COLOR_BLUE);
     init_pair(4, COLOR_WHITE, COLOR_YELLOW);*/
     
-    // Create the game board:
-    gameBoard = TBitGridCreate(TBitGridWordSizeForce32Bit, 1, 10, 15);
-    
-    theGameContext.theBoard = gameBoard;
-    theGameContext.thePiece = &thePiece;
-    
-    // Create the scoreboard:
-    gameScoreboard = TScoreboardMake();
+    // Create the game engine:
+    gameEngine = TGameEngineCreate(1, 10, 15);
     
     // Fake-up the initial layout
-    TBitGridFill(gameBoard, 0);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 3, 12), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 4, 12), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 8, 12), true);
     
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 8, 12), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 0, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 1, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 2, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 3, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 4, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 5, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 6, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 7, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 8, 13), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 9, 13), true);
     
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 0, 13), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 1, 13), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 4, 13), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 5, 13), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 6, 13), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 7, 13), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 8, 13), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 9, 13), true);
-    
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 0, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 1, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 2, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 3, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 4, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 5, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 6, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 7, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 8, 14), true);
-    TBitGridSetValueAtIndex(gameBoard, TBitGridMakeGridIndexWithPos(gameBoard, 9, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 0, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 1, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 2, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 3, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 4, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 5, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 6, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 7, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 8, 14), true);
+    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 9, 14), true);
     
     // Create our windows:
-    gameBoardWindow = tui_window_alloc(26, 7, 44, 32, 0, NULL, 0, gameBoardDraw, (const void*)&theGameContext);
-    statsWindow = tui_window_alloc(4, 7, 20, 32, 0, "STATS", 0, statsDraw, (const void*)&statsData);
-    scoreWindow = tui_window_alloc(72, 7, 22, 10, tui_window_opts_title_align_right, "SCORE", 0, scoreboardDraw, (const void*)&gameScoreboard);
-    nextTetrominoWindow = tui_window_alloc(72, 18, 22, 12, tui_window_opts_title_align_right, "NEXT UP", 0, nextTetrominoDraw, (const void*)&nextUp);
+    gameBoardWindow = tui_window_alloc(26, 7, 44, 32, 0, NULL, 0, gameBoardDraw, (const void*)gameEngine);
+    statsWindow = tui_window_alloc(4, 7, 20, 32, 0, "STATS", 0, statsDraw, (const void*)gameEngine);
+    scoreWindow = tui_window_alloc(72, 7, 22, 10, tui_window_opts_title_align_right, "SCORE", 0, scoreboardDraw, (const void*)gameEngine);
+    nextTetrominoWindow = tui_window_alloc(72, 18, 22, 12, tui_window_opts_title_align_right, "NEXT UP", 0, nextTetrominoDraw, (const void*)gameEngine);
 
     if ( gameBoardWindow && statsWindow) {
         refresh();
@@ -395,17 +352,9 @@ main()
     
         while ( (keyCh = getch()) != 'q' ) {
             switch ( keyCh ) {
-                case 's':
-                case 'S':
-                    TBitGridScroll(gameBoard);
-                    break;
                 case 'c':
                 case 'C':
-                    TBitGridClearLines(gameBoard, 13, 13);
-                    break;
-                case 'n':
-                case 'N':
-                    nextUp.tetromino = TTetrominosExtractOrientation(random() % 7, random() % 4);
+                    TGameEngineCheckForCompleteRows(gameEngine);
                     break;
                 case '1':
                 case '2':
@@ -414,74 +363,75 @@ main()
                 case '5':
                 case '6':
                 case '7':
-                    gameScoreboard.tetrominosOfType[keyCh - '1']++;
+                    gameEngine->scoreboard.tetrominosOfType[keyCh - '1']++;
                     break;
                 case 'p':
-                    TScoreboardAddLinesOfType(&gameScoreboard, 1 + random() % 4);
+                    TScoreboardAddLinesOfType(&gameEngine->scoreboard, 1 + random() % 4);
                     break;
-                case 'L':                    
-                    init_pair(1, COLOR_WHITE, COLOR_MAGENTA);
-                    init_pair(2, COLOR_WHITE, COLOR_CYAN);
-                    init_pair(3, COLOR_BLACK, COLOR_WHITE);
-                    init_pair(4, COLOR_BLACK, COLOR_YELLOW);
+                case '\r':
+                case '\n': {
+                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, TSpriteGet4x4(&gameEngine->currentSprite));
+                    TGameEngineCheckForCompleteRows(gameEngine);
+                    TGameEngineChooseNextPiece(gameEngine);
                     break;
+                }
                 case ' ': {
                     // Test for ok:
-                    unsigned int    oldOrientation = thePiece.orientation;
-                    uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameBoard, 1, thePiece.P), piece4x4;
+                    unsigned int    oldOrientation = gameEngine->currentSprite.orientation;
+                    uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, gameEngine->currentSprite.P), piece4x4;
                     
-                    thePiece.orientation = (thePiece.orientation + 1) % 4;
-                    piece4x4 = TSpriteGet4x4(&thePiece);
+                    gameEngine->currentSprite.orientation = (gameEngine->currentSprite.orientation + 1) % 4;
+                    piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     if ( (board4x4 & piece4x4) != 0 ) {
-                        thePiece.orientation = oldOrientation;
+                        gameEngine->currentSprite.orientation = oldOrientation;
                     }
                     break;
                 }
                 case KEY_UP: {
                     // Test for ok:
-                    TGridPos    newP = thePiece.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&thePiece);
+                    TGridPos    newP = gameEngine->currentSprite.P;
+                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.j--;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
-                        thePiece.P.j--;
+                        gameEngine->currentSprite.P.j--;
                     }
                     break;
                 }
                 case KEY_DOWN: {
                     // Test for ok:
-                    TGridPos    newP = thePiece.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&thePiece);
+                    TGridPos    newP = gameEngine->currentSprite.P;
+                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.j++;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
-                        thePiece.P.j++;
+                        gameEngine->currentSprite.P.j++;
                     }
                     break;
                 }
                 case KEY_LEFT: {
                     // Test for ok:
-                    TGridPos    newP = thePiece.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&thePiece);
+                    TGridPos    newP = gameEngine->currentSprite.P;
+                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.i--;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
-                        thePiece.P.i--;
+                        gameEngine->currentSprite.P.i--;
                     }
                     break;
                 }
                 case KEY_RIGHT: {
                     // Test for ok:
-                    TGridPos    newP = thePiece.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&thePiece);
+                    TGridPos    newP = gameEngine->currentSprite.P;
+                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.i++;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
-                        thePiece.P.i++;
+                        gameEngine->currentSprite.P.i++;
                     }
                     break;
                 }

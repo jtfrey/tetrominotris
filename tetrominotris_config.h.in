@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <errno.h>
+#include <time.h>
 
 #cmakedefine CURSES_HAVE_NCURSES_H
 #ifdef CURSES_HAVE_NCURSES_H

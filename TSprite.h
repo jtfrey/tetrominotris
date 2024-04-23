@@ -25,6 +25,7 @@ TSpriteMake(
                     .shiftI = 0, .shiftJ = 0,
                     .tetromino = tetromino
                 };
+    
     return theSprite;
 }
 
@@ -38,6 +39,18 @@ TSpriteGet4x4(
     if ( ! sprite->shiftJ ) T = TTetrominoOrientationShiftVertical(T, sprite->shiftJ);
     if ( ! sprite->shiftI ) T = TTetrominoOrientationShiftHorizontal(T, sprite->shiftI);
     return T;
+}
+
+static inline unsigned int
+TSpriteGetInitialClearRows(
+    TSprite     *sprite
+)
+{
+    uint16_t        T = TSpriteGet4x4(sprite);
+    unsigned int    rowCount = 0;
+    
+    while ( (rowCount < 4) && ! (T & 0x000F) ) rowCount++, T >>= 4;
+    return rowCount;
 }
     
 #endif /* __TSPRITE_H__ */
