@@ -6,7 +6,7 @@
 int
 main()
 {
-    TBitGrid    *ourBoard = TBitGridCreate(TBitGridWordSizeForce64Bit, 1, 10, 20);
+    TBitGrid    *ourBoard = TBitGridCreate(TBitGridWordSizeDefault, 1, 10, 20);
     TGridPos    P;
     TGridIndex  I;
     
@@ -50,7 +50,8 @@ main()
     TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 7, 19), true);
     TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 8, 19), true);
     TBitGridSetValueAtIndex(ourBoard, TBitGridMakeGridIndexWithPos(ourBoard, 9, 19), true);
-    TBitGridChannelSummary(ourBoard, 1);
+    
+    TBitGridChannelSummary(ourBoard, 0, TBitGridChannelSummaryKindTechnical);
     
     TBitGridIterator    *ourScanner = TBitGridIteratorCreate(ourBoard, 1);
     bool                foundCell;
@@ -132,13 +133,13 @@ main()
     
     // Load blocks of the grid:
     printf("\n-----\n");
-    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 1, TGridPosMake(0, 16));
+    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 0, TGridPosMake(0, 16));
     TTetrominoOrientationSummary(tetromino);
     printf("\n");
-    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 1, TGridPosMake(4, 17));
+    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 0, TGridPosMake(4, 17));
     TTetrominoOrientationSummary(tetromino);
     printf("\n");
-    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 1, TGridPosMake(5, 16));
+    tetromino = TBitGridExtract4x4AtPosition(ourBoard, 0, TGridPosMake(5, 16));
     TTetrominoOrientationSummary(tetromino);
     
     

@@ -219,6 +219,22 @@ TBitGridSetValueAtPosition(
     return bitGrid->callbacks.setCellValueAtIndex(bitGrid, TBitGridPosToIndex(bitGrid, P), value);
 }
 
+/*
+ * @enum TBitGrid word size
+ *
+ * When creating a TBitGrid instance the default behavior is to choose a word
+ * size such that:
+ *
+ * - for width <= 8, 8-bit words
+ * - for 8 < width <= 16, 16-bit words
+ * - for 16 < width <= 32, 32-bit words
+ * - for 32 < width <= 64, 64-bit words
+ * - for 64 < width, the word size that minimizes the number of wasted bits and
+ *       maximizes the number of bits-per-word is chosen
+ *
+ * For the sake of testing etc. the word size can be explicitly chosen with
+ * the TBitGridWordSizeForce8Bit et al. values.
+ */
 enum {
     TBitGridWordSizeDefault = 0,
     TBitGridWordSizeForce8Bit,
@@ -227,20 +243,25 @@ enum {
     TBitGridWordSizeForce64Bit
 };
 
+/*
+ * @typedef TBitGridWordSize
+ *
+ * The type of a value from the TBitGrid word size enumeration.
+ */
 typedef unsigned int TBitGridWordSize;
 
 /*
  * @function TBitGridCreate
  *
  * Allocate a new TBitGrid instance given the width (w) and height (h)
- * and anywhere from 1 to 8 channels (nChannels).
+ * and anywhere from 1 to 8 channels (nChannels).  The underlying data
+ * array type is dictated by the wordSize.
  *
  * Returns NULL on failure, otherwise the returned TBitGrid pointer is owned
  * by the caller and should eventually be deallocated using the TBitGridDestroy()
  * function.
  */
 TBitGrid* TBitGridCreate(TBitGridWordSize wordSize, unsigned int nChannels, unsigned int w, unsigned int h);
-
 
 /*
  * @function TBitGridDestroy
@@ -249,24 +270,152 @@ TBitGrid* TBitGridCreate(TBitGridWordSize wordSize, unsigned int nChannels, unsi
  */
 void TBitGridDestroy(TBitGrid* bitGrid);
 
+/*
+ * @function TBitGridScroll
+ *
+ * Shift the entire bit grid forward one row, introducing a row of zeroes at
+ * the head of the grid.
+ */
 void TBitGridScroll(TBitGrid *bitGrid);
+
+/*
+ * @function TBitGridClearLines
+ *
+ * Remove the rows [jLow,jHigh] from the bit grid.  Any rows leading up to jLow
+ * are scrolled down to fill the gap and rows of zeroes are introduced at the
+ * head of the grid.
+ */
 void TBitGridClearLines(TBitGrid *bitGrid, unsigned int jLow, unsigned int jHigh);
 
+/*
+ * @function TBitGridFill
+ *
+ * Fill every cell of the grid with value.
+ */
 void TBitGridFill(TBitGrid *bitGrid, TCell value);
 
-
+/*
+ * @function TBitGridExtract4x4AtPosition
+ *
+ * Starting at the grid position P extract the 4x4 sub-grid of bit values from
+ * channel channelIdx:
+ *
+ *       P  —— i ——>
+ *      |   0 .... 3
+ *      j   4 ..X. 7    = 0b1111111001000000 = 0xFE40
+ *      |   8 .XXX 11
+ *      V  12 XXXX 15
+ *
+ * The extracted 4x4 representation can be collision-tested against a 4x4
+ * tetromino by a simple bitwise AND:
+ *
+ *       P  —— i ——>
+ *      |   0 .... 3         0 .XXX 3
+ *      j   4 ..X. 7         4 ..X. 7
+ *      |   8 .XXX 11        8 .... 11
+ *      V  12 XXXX 15       12 .... 15
+ *
+ *           0xFE40    &     0x004E        = 0x0040  => collision
+ *
+ * versus
+ *
+ *       P  —— i ——>
+ *      |   0 .... 3         0 .X.. 3
+ *      j   4 ..X. 7         4 XX.. 7
+ *      |   8 .XXX 11        8 X... 11
+ *      V  12 XXXX 15       12 .... 15
+ *
+ *           0xFE40    &     0x0132        = 0x0000  => no collision
+ */
 uint16_t TBitGridExtract4x4AtPosition(TBitGrid *bitGrid, unsigned int channelIdx, TGridPos P);
 
+/*
+ * @function TBitGridSet4x4AtPosition
+ *
+ * Merge the 4x4 sub-grid represented by in4x4 into the bitGrid at grid position
+ * P.  Bits are pushed to channel channelIdx.
+ *
+ *        Location on bitGrid    in4x4
+ *
+ *       P  —— i ——>            —— i ——>        P  —— i ——>
+ *      |   0 .... 3            0 .... 3           0 .... 3
+ *      j   4 .... 7            4 XXX. 7     =>    4 XXX. 7    = 0b1111111101110000 = 0xFF70
+ *      |   8 X.XX 11           8 .X.. 11          8 XXXX 11
+ *      V  12 XXXX 15          12 .... 15         12 XXXX 15
+ *
+ *          0xFD00       |      0x0270       =>    0xFF70
+ */
 void TBitGridSet4x4AtPosition(TBitGrid *bitGrid, unsigned int channelIdx, TGridPos P, uint16_t in4x4);
 
-void TBitGridChannelSummary(TBitGrid *bitGrid, unsigned int channelIdx);
+/*
+ * @enum TBitGrid channel summary kind
+ *
+ * - visual:  display the channel as a textual grid pattern
+ * - technical:  display all parameters and show the grid data as hexadecimal words
+ */
+enum {
+    TBitGridChannelSummaryKindVisual    = 0,
+    TBitGridChannelSummaryKindTechnical
+};
+
+/*
+ * @typedef TBitGridChannelSummaryKind
+ *
+ * The type of a TBitGrid channel summary kind
+ */
+typedef unsigned int TBitGridChannelSummaryKind;
+
+/*
+ * @function TBitGridChannelSummary
+ *
+ * Write a summary of the bitGrid to stdout.  Under the "visual" kind, the
+ * grid is drawn to stdout visually as an array of 2x2 character filled/empty
+ * blocks.
+ *
+ * The "technical" mode displays the bitGrid sheerly as property values and
+ * an indexed list of hexadecimal words comprising the grid.
+ *
+ * Bits are extracted from the given channel by channelIdx.
+ */
+void TBitGridChannelSummary(TBitGrid *bitGrid, unsigned int channelIdx, TBitGridChannelSummaryKind summaryKind);
 
 
+
+/* Forward declaration for the sake of declaring the callback
+ * functions: */
 struct TBitGridIterator;
 
+/*
+ * @typedef TBitGridIteratorNextFn
+ *
+ * The type of a function that iteratively returns the next TBitGrid position
+ * (in *outP) and cell value (in *value).  The function should return true if
+ * a position was enumerated or false if no more positions remain.
+ *
+ * The cell value is the bitwise OR of each channel selected by the channelMask
+ * passed at iterator creation.
+ */
 typedef bool (*TBitGridIteratorNextFn)(struct TBitGridIterator *iterator, TGridPos *outP, TCell *value);
+
+/*
+ * @typedef TBitGridIteratorNextFullRowFn
+ *
+ * The type of a function that iteratively returns the next TBitGrid row
+ * (in *outJ) for which the value of each channel selected on the channelMask
+ * passed at iterator creation is set in every cell in that row.
+ */
 typedef bool (*TBitGridIteratorNextFullRowFn)(struct TBitGridIterator *iterator, unsigned int *outJ);
 
+/*
+ * @typedef TBitGridIterator
+ *
+ * Data structure that is dynamically-allocated and initialized by the
+ * TBitGridIteratorCreate() function in order to iterate of the cells of
+ * a TBitGrid.
+ *
+ * Consumers of the TBitGridIterator functionality should not attempt to
+ * alter the contents of this data structure directly.
+ */
 typedef struct TBitGridIterator {
     TBitGridDimensions                  dimensions;
     unsigned int                        i, j;
@@ -279,10 +428,24 @@ typedef struct TBitGridIterator {
     } callbacks;
 } TBitGridIterator;
 
+/*
+ * @function TBitGridIteratorCreate
+ *
+ * Allocate a new TBitGridIterator that will enumerate (in the forward direction)
+ * the cells in bitGrid.  Only the bit values in the channels selected bt channelMask
+ * will be enumerated.
+ *
+ * The consumer is responsible for eventually deallocating the returned iterator by
+ * passing it to TBitGridIteratorDestroy().
+ */
 TBitGridIterator* TBitGridIteratorCreate(TBitGrid *bitGrid, TCell channelMask);
 
+/*
+ * @function TBitGridIteratorDestroy
+ *
+ * Deallocate a TBitGridIterator.
+ */
 void TBitGridIteratorDestroy(TBitGridIterator *iterator);
-
 
 /*
  * @function TBitGridIteratorNext

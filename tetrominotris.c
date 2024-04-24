@@ -306,42 +306,17 @@ main()
     init_pair(4, COLOR_WHITE, COLOR_YELLOW);*/
     
     // Create the game engine:
-    gameEngine = TGameEngineCreate(1, 10, 15);
-    
-    // Fake-up the initial layout
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 3, 12), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 4, 12), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 8, 12), true);
-    
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 0, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 1, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 2, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 3, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 4, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 5, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 6, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 7, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 8, 13), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 9, 13), true);
-    
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 0, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 1, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 2, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 3, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 4, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 5, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 6, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 7, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 8, 14), true);
-    TBitGridSetValueAtIndex(gameEngine->gameBoard, TBitGridMakeGridIndexWithPos(gameEngine->gameBoard, 9, 14), true);
+    gameEngine = TGameEngineCreate(1, 10, 20);
     
     // Create our windows:
-    gameBoardWindow = tui_window_alloc(26, 7, 44, 32, 0, NULL, 0, gameBoardDraw, (const void*)gameEngine);
+    gameBoardWindow = tui_window_alloc(26, 7, 44, 42, 0, NULL, 0, gameBoardDraw, (const void*)gameEngine);
     statsWindow = tui_window_alloc(4, 7, 20, 32, 0, "STATS", 0, statsDraw, (const void*)gameEngine);
     scoreWindow = tui_window_alloc(72, 7, 22, 10, tui_window_opts_title_align_right, "SCORE", 0, scoreboardDraw, (const void*)gameEngine);
     nextTetrominoWindow = tui_window_alloc(72, 18, 22, 12, tui_window_opts_title_align_right, "NEXT UP", 0, nextTetrominoDraw, (const void*)gameEngine);
 
     if ( gameBoardWindow && statsWindow) {
+        bool        triggerStatsNextMove = false;
+        
         refresh();
         drawGameTitle(mainWindow);
         tui_window_refresh(statsWindow, 1);
@@ -370,20 +345,37 @@ main()
                     break;
                 case '\r':
                 case '\n': {
-                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, TSpriteGet4x4(&gameEngine->currentSprite));
-                    TGameEngineCheckForCompleteRows(gameEngine);
-                    TGameEngineChooseNextPiece(gameEngine);
+                    // Test for ok:
+                    TGridPos    newP = gameEngine->currentSprite.P;
+                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
+                    
+                    newP.j++;
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
+                    if ( (board4x4 & piece4x4) != 0 ) {
+                        TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, TSpriteGet4x4(&gameEngine->currentSprite));
+                        TGameEngineCheckForCompleteRows(gameEngine);
+                        TGameEngineChooseNextPiece(gameEngine);
+                    }
                     break;
                 }
+                case 'T':
+                case 't':
+                    triggerStatsNextMove = true;
+                    break;
                 case ' ': {
                     // Test for ok:
-                    unsigned int    oldOrientation = gameEngine->currentSprite.orientation;
-                    uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, gameEngine->currentSprite.P), piece4x4;
+                    TSprite         newOrientation = TSpriteMakeRotated(&gameEngine->currentSprite);
+                    uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newOrientation.P);
+                    uint16_t        piece4x4 = TSpriteGet4x4(&newOrientation);
                     
-                    gameEngine->currentSprite.orientation = (gameEngine->currentSprite.orientation + 1) % 4;
-                    piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-                    if ( (board4x4 & piece4x4) != 0 ) {
-                        gameEngine->currentSprite.orientation = oldOrientation;
+                    if ( (board4x4 & piece4x4) == 0 ) {
+                        gameEngine->currentSprite = newOrientation;
+                    }
+                    if ( triggerStatsNextMove ) {
+                        FILE *fptr = fopen("next-move.txt", "w");
+                        fprintf(fptr, "ROTATE   %04hX   %04hX   %04hX\n", piece4x4, board4x4, piece4x4 & board4x4);
+                        fclose(fptr);
+                        triggerStatsNextMove = false;
                     }
                     break;
                 }
@@ -393,9 +385,15 @@ main()
                     uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.j--;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
                         gameEngine->currentSprite.P.j--;
+                    }
+                    if ( triggerStatsNextMove ) {
+                        FILE *fptr = fopen("next-move.txt", "w");
+                        fprintf(fptr, "UP   %04hX   %04hX   %04hX\n", piece4x4, board4x4, piece4x4 & board4x4);
+                        fclose(fptr);
+                        triggerStatsNextMove = false;
                     }
                     break;
                 }
@@ -405,9 +403,15 @@ main()
                     uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.j++;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
                         gameEngine->currentSprite.P.j++;
+                    }
+                    if ( triggerStatsNextMove ) {
+                        FILE *fptr = fopen("next-move.txt", "w");
+                        fprintf(fptr, "DOWN   %04hX   %04hX   %04hX\n", piece4x4, board4x4, piece4x4 & board4x4);
+                        fclose(fptr);
+                        triggerStatsNextMove = false;
                     }
                     break;
                 }
@@ -417,9 +421,15 @@ main()
                     uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.i--;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
                         gameEngine->currentSprite.P.i--;
+                    }
+                    if ( triggerStatsNextMove ) {
+                        FILE *fptr = fopen("next-move.txt", "w");
+                        fprintf(fptr, "LEFT   %04hX   %04hX   %04hX\n", piece4x4, board4x4, piece4x4 & board4x4);
+                        fclose(fptr);
+                        triggerStatsNextMove = false;
                     }
                     break;
                 }
@@ -429,9 +439,15 @@ main()
                     uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                     
                     newP.i++;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 1, newP);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
                         gameEngine->currentSprite.P.i++;
+                    }
+                    if ( triggerStatsNextMove ) {
+                        FILE *fptr = fopen("next-move.txt", "w");
+                        fprintf(fptr, "RIGHT   %04hX   %04hX   %04hX\n", piece4x4, board4x4, piece4x4 & board4x4);
+                        fclose(fptr);
+                        triggerStatsNextMove = false;
                     }
                     break;
                 }

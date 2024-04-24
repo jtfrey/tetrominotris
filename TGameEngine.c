@@ -102,11 +102,11 @@ TGameEngineCheckForCompleteRows(
     FILE    *fptr = fopen("row-check.txt", "w");
     
     while ( TBitGridIteratorNextFullRow(iterator, &currentRow) ) {
-        fprintf(fptr, "1. %u", currentRow);
+        fprintf(fptr, "1. %u\n", currentRow);
         if ( nRow == 0 ) {
             startFullRow = currentRow;
             nRow = 1;
-            fprintf(fptr, "2. %u 1", currentRow);
+            fprintf(fptr, "2. %u 1\n", currentRow);
         } else {
             if ( startFullRow + nRow == currentRow ) {
                 // Extending a multirow match:
@@ -115,12 +115,13 @@ TGameEngineCheckForCompleteRows(
             } else {
                 TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
                 TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
-                startFullRow = -1, nRow = 0;
+                startFullRow = currentRow, nRow = 1;
             }
         }
     }
-    if ( startFullRow >= 0 && nRow > 0 ) {
+    if ( nRow > 0 ) {
         TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
         TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
     }
+    fclose(fptr);
 }
