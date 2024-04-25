@@ -151,6 +151,28 @@ timespec_to_double(
 }
 
 
+static inline struct timespec
+timespec_tpl_with_level(
+    unsigned int    level
+)
+{
+    struct timespec tpl;
+    
+    if ( level == 0 ) {
+        tpl.tv_sec = 1; tpl.tv_nsec = 0;
+    } else {
+        double      s = 0.8 - 0.007 * (double)level;
+        double      st = s;
+        
+        while ( --level ) st *= s;
+        tpl.tv_sec = floor(st);
+        tpl.tv_nsec = (long)(1e9 * (st - floor(st)));
+    }
+    return tpl;
+}
+
+
+
 /*
  * @typedef TGameEngine
  *
@@ -158,15 +180,35 @@ timespec_to_double(
  * engine.
  */
 typedef struct {
+    // The game board:
     TBitGrid            *gameBoard;
+    
+    // Paused?
+    bool                isPaused;
+    
+    // The scoreboard for the game:
     TScoreboard         scoreboard;
+    
+    // The base starting postion on the grid of each new tetromino:
     TGridPos            startingPos;
+    
+    // The current tetromino sprite and the next one due to appear
+    // on the board:
     unsigned int        currentTetrominoId, nextTetrominoId;
     TSprite             currentSprite, nextSprite;
-    struct timespec     totalGameTime, nextTickTime;
+    
+    // The map of position in the status list of each tetromino
+    // and it's 4x4 representation to display:
     unsigned int        tetrominoIdsForReps[TTetrominosCount];
     uint16_t            terominoRepsForStats[TTetrominosCount];
+    
+    // State array for the PRNG:
     char                randomState[TGAMEENGINE_RANDOM_NSTATE];
+    
+    // The different timing variables:
+    struct timespec     tElapsed;           // total time the game has been in-play
+    struct timespec     tPerLine;           // time a tetromino hangs stationary
+                                            // (changes by level)
 } TGameEngine;
 
 

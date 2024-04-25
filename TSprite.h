@@ -65,6 +65,25 @@ TSpriteMakeRotated(
 }
 
 /*
+ * @function TSpriteMakeRotatedAnti
+ *
+ * Return a copy of sprite that has been rotated counter-clockwise.
+ */
+static inline TSprite
+TSpriteMakeRotatedAnti(
+    TSprite     *sprite
+)
+{
+    TSprite     newSprite = {
+                    .P = sprite->P,
+                    .orientation = (sprite->orientation + 1) % 4,
+                    .shiftI = -sprite->shiftJ, .shiftJ = -sprite->shiftI,
+                    .tetromino = sprite->tetromino
+                };
+    return newSprite;
+}
+
+/*
  * @function TSpriteGet4x4
  *
  * Extract the current 4x4 bitmap representation of the tetromino
@@ -99,6 +118,27 @@ TSpriteRotate(
     int         swap;
     
     sprite->orientation = (sprite->orientation + 1) % 4;
+    swap = sprite->shiftI;
+    sprite->shiftI = -sprite->shiftJ;
+    sprite->shiftJ = -swap;
+}
+
+/*
+ * @function TSpriteRotateAnti
+ *
+ * When the sprite is "rotated" the orientiation is decremented (modulus 4).
+ * Orientation "rotation" goes counter-clockwise, so the shifts must also rotate:
+ *
+ *    shiftI = -shiftJ    and    shiftJ = -shiftI
+ */
+static inline void
+TSpriteRotateAnti(
+    TSprite     *sprite
+)
+{
+    int         swap;
+    
+    sprite->orientation = (sprite->orientation - 1) % 4;
     swap = sprite->shiftI;
     sprite->shiftI = -sprite->shiftJ;
     sprite->shiftJ = -swap;

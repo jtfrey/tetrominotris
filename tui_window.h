@@ -4,6 +4,27 @@
 
 #include "tetrominotris_config.h"
 
+
+
+typedef struct {
+    int             x, y;
+    unsigned int    w, h;
+} tui_window_rect_t;
+
+static inline tui_window_rect_t
+tui_window_rect_make(
+    int             x,
+    int             y,
+    unsigned int    w,
+    unsigned int    h
+)
+{
+    tui_window_rect_t   R = { .x = x, .y = y, .w = w, .h = h };
+    return R;
+}
+
+
+
 /*
  * @enum TUI window options
  *
@@ -75,7 +96,8 @@ typedef void (*tui_window_refresh_callback_t)(tui_window_ref the_window, WINDOW 
  * refresh_fn; it can be used to communicate external data to the
  * function.
  */
-tui_window_ref tui_window_alloc(int x, int y, int w, int h,
+tui_window_ref tui_window_alloc(
+                    tui_window_rect_t bounds,
                     tui_window_opts_t opts,
                     const char *title, int title_len,
                     tui_window_refresh_callback_t refresh_fn, const void *refresh_context

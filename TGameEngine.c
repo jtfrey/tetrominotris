@@ -21,7 +21,7 @@ TGameEngineCreate(
 )
 {
     TGameEngine         *newEngine = NULL;
-    TBitGrid            *gameBoard = TBitGridCreate(TBitGridWordSizeDefault, nChannels, w, h);
+    TBitGrid            *gameBoard = TBitGridCreate(TBitGridWordSizeForce16Bit, nChannels, w, h);
     
     if ( gameBoard ) {
         newEngine = (TGameEngine*)malloc(sizeof(TGameEngine));    
@@ -34,8 +34,8 @@ TGameEngineCreate(
             
             //  Fill-in the rest of the game engine fields:
             newEngine->gameBoard = gameBoard;
+            newEngine->isPaused = false;
             newEngine->startingPos = TGridPosMake(w / 2, 0);
-            newEngine->totalGameTime = TGameEngineZeroTime;
             
             // Shift two pieces into the engine, current and next:
             TGameEngineChooseNextPiece(newEngine);
@@ -59,6 +59,10 @@ TGameEngineCreate(
             newEngine->tetrominoIdsForReps[4] = 2;
             newEngine->tetrominoIdsForReps[5] = 5;
             newEngine->tetrominoIdsForReps[6] = 1;
+            
+            // Timings:
+            newEngine->tElapsed = TGameEngineZeroTime;
+            newEngine->tPerLine = timespec_tpl_with_level(newEngine->scoreboard.level);
         } else {
             TBitGridDestroy(gameBoard);   
         }
@@ -93,27 +97,25 @@ TGameEngineChooseNextPiece(
 
 void
 TGameEngineCheckForCompleteRows(
-    TGameEngine *gameEngine
+    TGameEngine     *gameEngine
 )
 {
     TBitGridIterator    *iterator = TBitGridIteratorCreate(gameEngine->gameBoard, TGameEngineBitGridChannelIsOccupied);
     unsigned int        startFullRow = -1, nRow = 0, currentRow;
-    
-    FILE    *fptr = fopen("row-check.txt", "w");
+    bool                didClearRows = false;
+    unsigned int        curLevel = gameEngine->scoreboard.level;
     
     while ( TBitGridIteratorNextFullRow(iterator, &currentRow) ) {
-        fprintf(fptr, "1. %u\n", currentRow);
         if ( nRow == 0 ) {
             startFullRow = currentRow;
             nRow = 1;
-            fprintf(fptr, "2. %u 1\n", currentRow);
         } else {
             if ( startFullRow + nRow == currentRow ) {
                 // Extending a multirow match:
                 nRow++;
-                fprintf(fptr, "2. %u %u\n", startFullRow, nRow);
             } else {
                 TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
+                didClearRows = true;
                 TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
                 startFullRow = currentRow, nRow = 1;
             }
@@ -121,7 +123,11 @@ TGameEngineCheckForCompleteRows(
     }
     if ( nRow > 0 ) {
         TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
+        didClearRows = true;
         TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
     }
-    fclose(fptr);
+    if ( didClearRows ) {
+        // Level change?
+        if ( gameEngine->scoreboard.level > curLevel ) gameEngine->tPerLine = timespec_tpl_with_level(gameEngine->scoreboard.level);
+    }
 }

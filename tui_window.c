@@ -3,7 +3,7 @@
 
 typedef struct tui_window {
     WINDOW                          *window_ptr;
-    int                             x, y, w, h;
+    tui_window_rect_t               bounds;
     tui_window_opts_t               opts;
     
     tui_window_refresh_callback_t   refresh_fn;
@@ -17,7 +17,7 @@ typedef struct tui_window {
 
 tui_window_ref
 tui_window_alloc(
-    int x, int y, int w, int h,
+    tui_window_rect_t bounds,
     tui_window_opts_t opts,
     const char *title, int title_len,
     tui_window_refresh_callback_t refresh_fn, const void *refresh_context
@@ -26,15 +26,15 @@ tui_window_alloc(
     tui_window_t    *new_window = NULL;
     int             actual_title_len = title ? (title_len ? title_len : strlen(title)) : 0;
     
-    if ( actual_title_len > (w - 6) ) actual_title_len = w - 6;
+    if ( actual_title_len > (bounds.w - 6) ) actual_title_len = bounds.w - 6;
     
     new_window = (tui_window_t*)malloc(sizeof(tui_window_t) + (actual_title_len + 3));
     
     if ( new_window ) {
-        new_window->x = x, new_window->y = y, new_window->w = w, new_window->h = h;
+        new_window->bounds = bounds;
         new_window->opts = opts;
         
-        new_window->window_ptr = newwin(h, w, y, x);
+        new_window->window_ptr = newwin(bounds.h, bounds.w, bounds.y, bounds.x);
         
         new_window->refresh_fn = refresh_fn;
         new_window->refresh_context = refresh_context;
@@ -86,14 +86,14 @@ tui_window_refresh(
                 x = 2;
                 break;
             case tui_window_opts_title_align_center:
-                x = the_window->w / 2 - (1 + the_window->title_len / 2);
+                x = the_window->bounds.w / 2 - (1 + the_window->title_len / 2);
                 break;
                 break;
             case tui_window_opts_title_align_right:
-                x = the_window->w - 2 - the_window->title_len;
+                x = the_window->bounds.w - 2 - the_window->title_len;
                 break;
         }
-        y = ( the_window->opts & tui_window_opts_title_align_vert ) ? (the_window->h - 1) : 0;
+        y = ( the_window->opts & tui_window_opts_title_align_vert ) ? (the_window->bounds.h - 1) : 0;
         mvwprintw(the_window->window_ptr, y, x, the_window->title);
         mvwaddch(the_window->window_ptr, y, x, ACS_RTEE);
         mvwaddch(the_window->window_ptr, y, x + the_window->title_len - 1, ACS_LTEE);

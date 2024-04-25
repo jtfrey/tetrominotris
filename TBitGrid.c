@@ -1392,12 +1392,12 @@ TBitGridCreate(
                 break;
         }
 #ifdef TBITGRID_DEBUG
-    printf("(w,h) = (%u,%u), nBitsPerWord = %u, nWords = %u, nWordsPerRow = %u, nBytesPerWord = %u\n",
-            newBitGrid->dimensions.w, newBitGrid->dimensions.h,
-            newBitGrid->dimensions.nBitsPerWord, newBitGrid->dimensions.nWordsTotal,
-            newBitGrid->dimensions.nWordsPerRow, newBitGrid->dimensions.nBytesPerWord
-        );
-    printf("nChannels = %u, channelBytes = %zu, gridBytes = %zu\n", nChannels, channelBytes, gridBytes);
+        printf("(w,h) = (%u,%u), nBitsPerWord = %u, nWords = %u, nWordsPerRow = %u, nBytesPerWord = %u\n",
+                newBitGrid->dimensions.w, newBitGrid->dimensions.h,
+                newBitGrid->dimensions.nBitsPerWord, newBitGrid->dimensions.nWordsTotal,
+                newBitGrid->dimensions.nWordsPerRow, newBitGrid->dimensions.nBytesPerWord
+            );
+        printf("nChannels = %u, channelBytes = %zu, gridBytes = %zu\n", nChannels, channelBytes, gridBytes);
 #endif
     }
     return newBitGrid;
@@ -1828,7 +1828,7 @@ __TBitGridSet4x4AtPosition_8b(
 {
     uint8_t         *grid = bitGrid->grid[channelIdx].b8 + baseW;
     unsigned int    nBitsInRow = iHi - iLo;
-    uint16_t        in4x4Mask = ((1 << nBitsInRow) - 1);
+    uint16_t        in4x4Mask = (((uint16_t)1 << nBitsInRow) - 1);
     
     if ( baseb + nBitsInRow <= 8 ) {
         int         shift = baseb;
@@ -1845,22 +1845,22 @@ __TBitGridSet4x4AtPosition_8b(
             jLo++;
         }
     } else {
-        int         shift0 = baseb, shift1 = baseb - 4;
+        int         shift0 = baseb, shift1 = baseb - 8;
         
         // Split between two consecutive words:
         while ( jLo < jHi ) {
             if ( shift0 <= 0)
-                *grid |= (in4x4 & in4x4Mask) << shift0;
-            else
                 *grid |= (in4x4 & in4x4Mask) >> -shift0;
-            if ( shift1 < 0 )
-                *(grid + 1) |= (in4x4 & in4x4Mask) >> shift1;
             else
-                *(grid + 1) |= (in4x4 & in4x4Mask) << -shift1;
+                *grid |= (in4x4 & in4x4Mask) << shift0;
+            if ( shift1 <= 0 )
+                *(grid + 1) |= (in4x4 & in4x4Mask) >> -shift1;
+            else
+                *(grid + 1) |= (in4x4 & in4x4Mask) << shift1;
             grid += bitGrid->dimensions.nWordsPerRow;
             in4x4Mask <<= 4;
             shift0 -= 4;
-            shift1 += 4;
+            shift1 -= 4;
             jLo++;
         }
     }
@@ -1881,7 +1881,7 @@ __TBitGridSet4x4AtPosition_16b(
 {
     uint16_t        *grid = bitGrid->grid[channelIdx].b16 + baseW;
     unsigned int    nBitsInRow = iHi - iLo;
-    uint16_t        in4x4Mask = ((1 << nBitsInRow) - 1);
+    uint16_t        in4x4Mask = (((uint16_t)1 << nBitsInRow) - 1);
     
     if ( baseb + nBitsInRow <= 16 ) {
         int         shift = baseb;
@@ -1898,22 +1898,22 @@ __TBitGridSet4x4AtPosition_16b(
             jLo++;
         }
     } else {
-        int         shift0 = baseb, shift1 = baseb - 12;
+        int         shift0 = baseb, shift1 = baseb - 16;
         
         // Split between two consecutive words:
         while ( jLo < jHi ) {
             if ( shift0 <= 0)
-                *grid |= (in4x4 & in4x4Mask) << shift0;
-            else
                 *grid |= (in4x4 & in4x4Mask) >> -shift0;
-            if ( shift1 < 0 )
-                *(grid + 1) |= (in4x4 & in4x4Mask) >> shift1;
             else
-                *(grid + 1) |= (in4x4 & in4x4Mask) << -shift1;
+                *grid |= (in4x4 & in4x4Mask) << shift0;
+            if ( shift1 <= 0 )
+                *(grid + 1) |= (in4x4 & in4x4Mask) >> -shift1;
+            else
+                *(grid + 1) |= (in4x4 & in4x4Mask) << shift1;
             grid += bitGrid->dimensions.nWordsPerRow;
             in4x4Mask <<= 4;
             shift0 -= 4;
-            shift1 += 4;
+            shift1 -= 4;
             jLo++;
         }
     }
@@ -1934,7 +1934,7 @@ __TBitGridSet4x4AtPosition_32b(
 {
     uint32_t        *grid = bitGrid->grid[channelIdx].b32 + baseW;
     unsigned int    nBitsInRow = iHi - iLo;
-    uint16_t        in4x4Mask = ((1 << nBitsInRow) - 1);
+    uint16_t        in4x4Mask = (((uint16_t)1 << nBitsInRow) - 1);
     
     if ( baseb + nBitsInRow <= 32 ) {
         int         shift = baseb;
@@ -1951,22 +1951,22 @@ __TBitGridSet4x4AtPosition_32b(
             jLo++;
         }
     } else {
-        int         shift0 = baseb, shift1 = baseb - 28;
+        int         shift0 = baseb, shift1 = baseb - 32;
         
         // Split between two consecutive words:
         while ( jLo < jHi ) {
             if ( shift0 <= 0)
-                *grid |= (in4x4 & in4x4Mask) << shift0;
-            else
                 *grid |= (in4x4 & in4x4Mask) >> -shift0;
-            if ( shift1 < 0 )
-                *(grid + 1) |= (in4x4 & in4x4Mask) >> shift1;
             else
-                *(grid + 1) |= (in4x4 & in4x4Mask) << -shift1;
+                *grid |= (in4x4 & in4x4Mask) << shift0;
+            if ( shift1 <= 0 )
+                *(grid + 1) |= (in4x4 & in4x4Mask) >> -shift1;
+            else
+                *(grid + 1) |= (in4x4 & in4x4Mask) << shift1;
             grid += bitGrid->dimensions.nWordsPerRow;
             in4x4Mask <<= 4;
             shift0 -= 4;
-            shift1 += 4;
+            shift1 -= 4;
             jLo++;
         }
     }
@@ -1987,7 +1987,7 @@ __TBitGridSet4x4AtPosition_64b(
 {
     uint64_t        *grid = bitGrid->grid[channelIdx].b64 + baseW;
     unsigned int    nBitsInRow = iHi - iLo;
-    uint16_t        in4x4Mask = ((1 << nBitsInRow) - 1);
+    uint16_t        in4x4Mask = (((uint16_t)1 << nBitsInRow) - 1);
     
     if ( baseb + nBitsInRow <= 64 ) {
         int         shift = baseb;
@@ -2004,22 +2004,22 @@ __TBitGridSet4x4AtPosition_64b(
             jLo++;
         }
     } else {
-        int         shift0 = baseb, shift1 = baseb - 60;
+        int         shift0 = baseb, shift1 = baseb - 64;
         
         // Split between two consecutive words:
         while ( jLo < jHi ) {
             if ( shift0 <= 0)
-                *grid |= (in4x4 & in4x4Mask) << shift0;
-            else
                 *grid |= (in4x4 & in4x4Mask) >> -shift0;
-            if ( shift1 < 0 )
-                *(grid + 1) |= (in4x4 & in4x4Mask) >> shift1;
             else
-                *(grid + 1) |= (in4x4 & in4x4Mask) << -shift1;
+                *grid |= (in4x4 & in4x4Mask) << shift0;
+            if ( shift1 <= 0 )
+                *(grid + 1) |= (in4x4 & in4x4Mask) >> -shift1;
+            else
+                *(grid + 1) |= (in4x4 & in4x4Mask) << shift1;
             grid += bitGrid->dimensions.nWordsPerRow;
             in4x4Mask <<= 4;
             shift0 -= 4;
-            shift1 += 4;
+            shift1 -= 4;
             jLo++;
         }
     }
@@ -2038,7 +2038,7 @@ TBitGridSet4x4AtPosition(
     unsigned int    baseW, baseb;
     
     //  Off the top-left of the board:
-    if ( iHi < 0 || jHi < 0 ) return;
+    if ( iHi <= 0 || jHi <= 0 ) return;
     
     //  Off the right-bottom of the board:
     if ( iLo >= (int)bitGrid->dimensions.w || jLo >= (int)bitGrid->dimensions.h ) return;
