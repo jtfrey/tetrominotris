@@ -55,6 +55,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_executable(TBitGrid_demo TBitGrid.c)
 target_compile_definitions(TBitGrid_demo PRIVATE TBITGRID_DEBUG TBITGRID_DEMO)
+target_link_libraries(TBitGrid_demo PRIVATE m)
 
 #
 # The game:
@@ -62,9 +63,10 @@ target_compile_definitions(TBitGrid_demo PRIVATE TBITGRID_DEBUG TBITGRID_DEMO)
 add_executable(tetrominotris TTetrominos.c TBitGrid.c TGameEngine.c tui_window.c tetrominotris.c)
 target_include_directories(tetrominotris PRIVATE ${CURSES_INCLUDE_DIRS})
 target_compile_options(tetrominotris PRIVATE ${CURSES_CFLAGS})
-target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES})
+target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES} m)
 
 #
 # The library demo:
 #
 add_executable(tetrominotris_demo TTetrominos.c TBitGrid.c tetrominotris_demo.c)
+target_link_libraries(tetrominotris_demo PRIVATE m)
