@@ -76,7 +76,7 @@ TSpriteMakeRotatedAnti(
 {
     TSprite     newSprite = {
                     .P = sprite->P,
-                    .orientation = (sprite->orientation + 1) % 4,
+                    .orientation = (sprite->orientation - 1) % 4,
                     .shiftI = -sprite->shiftJ, .shiftJ = -sprite->shiftI,
                     .tetromino = sprite->tetromino
                 };
