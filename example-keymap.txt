@@ -1,0 +1,24 @@
+#
+# This is a sample keymap file for tetrominotris
+#
+# Note that the left/right arrow keys are ALWAYS available for left/right
+# movement; likewise, the down arrow is ALWAYS available for soft-drop.
+# Those three events are NOT mandatory in a keymap file, but all others
+# are.
+#
+#    RESET, PAUSE, HARD DROP, ROTATE ANTICLOCKWISE, ROTATE CLOCKWISE
+#
+# The lines are key-value pairs, separated by an equal sign.  The key
+# is a whitespace-delimited list of printable characters OR the single
+# special key, SPACE.  The value is the event name to associate with
+# that list of keys.
+#
+R r   = RESET
+P p   = PAUSE
+J j   = MOVE LEFT
+L l   = MOVE RIGHT
+K k   = SOFT DROP
+SPACE = HARD DROP
+A a   = ROTATE ANTICLOCKWISE
+D d   = ROTATE CLOCKWISE
+

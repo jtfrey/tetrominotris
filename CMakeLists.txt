@@ -60,7 +60,7 @@ target_link_libraries(TBitGrid_demo PRIVATE m)
 #
 # The game:
 #
-add_executable(tetrominotris TTetrominos.c TBitGrid.c TGameEngine.c tui_window.c tetrominotris.c)
+add_executable(tetrominotris TTetrominos.c TBitGrid.c TGameEngine.c TKeymap.c tui_window.c tetrominotris.c)
 target_include_directories(tetrominotris PRIVATE ${CURSES_INCLUDE_DIRS})
 target_compile_options(tetrominotris PRIVATE ${CURSES_CFLAGS})
 target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES} m)

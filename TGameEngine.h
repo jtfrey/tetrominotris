@@ -150,7 +150,17 @@ timespec_to_double(
     return (double)t->tv_sec + (double)t->tv_nsec * 1e-9;
 }
 
-
+/*
+ * @function timespec_tpl_with_level
+ *
+ * The amount of time a tetromino is suspended at each line
+ * is modeled by the function:
+ *
+ *     (0.8-(Level*0.007))^Level
+ *
+ * This function evaluates that function for the given
+ * level.
+ */
 static inline struct timespec
 timespec_tpl_with_level(
     unsigned int    level
@@ -171,7 +181,59 @@ timespec_tpl_with_level(
     return tpl;
 }
 
+/*
+ * @enum TGameEngine external events
+ *
+ * Enumerates the events an external system can communicate
+ * to the game engine on each tick.
+ *
+ * The external system is free to implement the user interface
+ * in whatever manner it decides since the user-directed
+ * changes to the game engine are abstracted from key presses,
+ * etc.
+ */
+enum {
+    TGameEngineEventNoOp = 0,
+    TGameEngineEventStartGame,
+    TGameEngineEventMoveLeft,
+    TGameEngineEventMoveRight,
+    TGameEngineEventRotateClockwise,
+    TGameEngineEventRotateAntiClockwise,
+    TGameEngineEventSoftDrop,
+    TGameEngineEventHardDrop,
+    TGameEngineEventTogglePause,
+    TGameEngineEventReset
+};
 
+/*
+ * @typedef TGameEngineEvent
+ *
+ * The type of a game engine event.
+ */
+typedef uint8_t TGameEngineEvent;
+
+/*
+ * @enum TGameEngine external update notifications
+ *
+ * The result of the game engine's processing an external event
+ * is notification of what aspects of the game engine changed
+ * state as a result -- and probably need to have their visual
+ * representation(s) updated.
+ */
+enum {
+    TGameEngineUpdateNotificationGameBoard = 1 << 0,
+    TGameEngineUpdateNotificationScoreboard = 1 << 1,
+    TGameEngineUpdateNotificationNextTetromino = 1 << 2,
+    //
+    TGameEngineUpdateNotificationAll = 0x7
+};
+
+/*
+ * @typedef TGameEngineUpdateNotification
+ *
+ * The type of a game engine update notification.
+ */
+typedef unsigned int TGameEngineUpdateNotification;
 
 /*
  * @typedef TGameEngine
@@ -183,11 +245,18 @@ typedef struct {
     // The game board:
     TBitGrid            *gameBoard;
     
-    // Paused?
+    // Basic states:
+    bool                hasBeenStarted;
     bool                isPaused;
+    bool                hasEnded;
+    
+    // Starting level for the game(s):
+    unsigned int        startingLevel;
     
     // The scoreboard for the game:
     TScoreboard         scoreboard;
+    unsigned int        extraPoints;
+    bool                isInSoftDrop;
     
     // The base starting postion on the grid of each new tetromino:
     TGridPos            startingPos;
@@ -206,16 +275,60 @@ typedef struct {
     char                randomState[TGAMEENGINE_RANDOM_NSTATE];
     
     // The different timing variables:
+    unsigned long       tickCount;          // number of times the tick function has
+                                            // been called with game time running
+    struct timespec     tLastTick;          // last time the tick function was
+                                            // called (for calculated elapsed time)
     struct timespec     tElapsed;           // total time the game has been in-play
     struct timespec     tPerLine;           // time a tetromino hangs stationary
                                             // (changes by level)
+    struct timespec     tNextDrop;          // time at which next automatic line
+                                            // drop occurs
 } TGameEngine;
 
+/*
+ * @function TGameEngineCreate
+ *
+ * Create a new game engine with the given game board dimensions ([w]idth and
+ * [h]eight) and the given number of bit channels.
+ *
+ * All elements of the engine are initialized to their starting values.  The
+ * startingLevel must be between 0 and 9 (per the original game).
+ */
+TGameEngine* TGameEngineCreate(unsigned int nChannels, unsigned int w, unsigned int h, unsigned int startingLevel);
 
-TGameEngine* TGameEngineCreate(unsigned int nChannels, unsigned int w, unsigned int h);
+/*
+ * @function TGameEngineReset
+ *
+ * Reset all elements of the gameEngine to their initial starting values.
+ * The game board is cleared, new tetromino pieces are selected, timers are
+ * reset, etc.
+ */
+void TGameEngineReset(TGameEngine *gameEngine);
 
+/*
+ * @function TGameEngineChooseNextPiece
+ *
+ * Add the current tetromino piece to the tally; shift the next piece into being
+ * the current; and select a new next piece.
+ */
 void TGameEngineChooseNextPiece(TGameEngine *gameEngine);
 
+/*
+ * @function TGameEngineCheckForCompleteRows
+ *
+ * Check for any ranges of completed rows; remove them from the game board; and
+ * update the line type stats; and update the score.
+ */
 void TGameEngineCheckForCompleteRows(TGameEngine *gameEngine);
+
+/*
+ * @function TGameEngineTick
+ *
+ * Make all updates associated with theEvent to the gameEngine.  The components
+ * whose state have changed is returned as a TGameEngineUpdateNotification bit
+ * vector.
+ */
+TGameEngineUpdateNotification TGameEngineTick(TGameEngine *gameEngine, TGameEngineEvent theEvent);
 
 #endif /* __TGAMEENGINE_H__ */

@@ -4,6 +4,7 @@
 #include "TSprite.h"
 #include "TScoreboard.h"
 #include "TGameEngine.h"
+#include "TKeymap.h"
 #include "tui_window.h"
 
 #include <locale.h>
@@ -17,9 +18,12 @@ static struct option cliArgOpts[] = {
     { "help",       no_argument,        NULL,       'h' },
     { "width",      required_argument,  NULL,       'w' },
     { "height",     required_argument,  NULL,       'H' },
+    { "level",      required_argument,  NULL,       'l' },
+    { "keymap",     required_argument,  NULL,       'k' },
+    { "utf8",       no_argument,        NULL,       'U' },
     { NULL,         0,                  NULL,        0  }
 };
-static const char *cliArgOptsStr = "hw:H:";
+static const char *cliArgOptsStr = "hw:H:l:k:U";
 
 //
 
@@ -39,11 +43,18 @@ usage(
         "    --help/-h                      show this information\n"
         "    --width/-w <dimension>         choose the game board width\n"
         "    --height/-h <dimension>        choose the game board height\n"
+        "    --level/-l #                   start the game at this level (0 and\n"
+        "                                   up)\n"
+        "    --keymap/-k <filepath>         initialize the key mapping from the\n"
+        "                                   given file\n"
+        "    --utf8/-U                      allow UTF-8 characters to be displayed\n"
         "\n"
         "    <dimension> = # | default | fit\n"
         "              # = a positive integer value\n"
         "        default = 10 wide or 20 high\n"
         "            fit = adjust the width to fit the terminal\n"
+        "\n"
+        "version: " TETROMINOTRIS_VERSION "\n"
         "\n",
         exe
     );
@@ -74,8 +85,10 @@ parseWidth(
             *width = v;
             return true;
         }
+        fprintf(stdout, "ERROR:  %s is lower than the minimum game board width of 10\n", optstr);
+    } else {
+        fprintf(stdout, "ERROR:  invalid game board width provided: %s\n", optstr);
     }
-    fprintf(stdout, "ERROR:  invalid width provided: %s\n", optstr);
     return false;
 }
 
@@ -100,16 +113,20 @@ parseHeight(
     }
     v = strtol(optstr, &endptr, 0);
     if ( endptr > optstr ) {
-        if ( v >= 20 ) {
+        if ( v >= 18 ) {
             *height = v;
             return true;
         }
+        fprintf(stdout, "ERROR:  %s is lower than the minimum game board height of 18\n", optstr);
+    } else {
+        fprintf(stdout, "ERROR:  invalid game board height provided: %s\n", optstr);
     }
-    fprintf(stdout, "ERROR:  invalid height provided: %s\n", optstr);
     return false;
 }
 
 //
+
+static bool gAllowUTF8 = false;
 
 static bool
 doesSupportUTF8(void)
@@ -118,8 +135,12 @@ doesSupportUTF8(void)
     static bool __doesSupportUTF8;
     
     if ( ! hasBeenChecked ) {
-        const char  *encoding = nl_langinfo(CODESET);
-        __doesSupportUTF8 = ( ! strcasecmp(encoding, "utf8") || ! strcasecmp(encoding, "utf-8") );
+        if ( gAllowUTF8 ) {
+            const char  *encoding = nl_langinfo(CODESET);
+            __doesSupportUTF8 = ( ! strcasecmp(encoding, "utf8") || ! strcasecmp(encoding, "utf-8") );
+        } else {
+            __doesSupportUTF8 = false;
+        }
         hasBeenChecked = true;
     }
     return __doesSupportUTF8;
@@ -133,6 +154,15 @@ static const char* gamePausedStrings[3] = {
                         "             "
                     };
 static unsigned int gamePausedStringsLen = 13;
+
+static const char* gameOverStrings[5] = {
+                        "                     ",
+                        "  G A M E   O V E R  ",
+                        "                     ",
+                        " press R/r  to reset ",
+                        "                     "
+                    };
+static unsigned int gameOverStringsLen = 21;
 
 void
 gameBoardDraw(
@@ -192,11 +222,15 @@ gameBoardDraw(
                 spriteBit = spriteBits & 0x1;
                 spriteBits >>= 1;
             }
-            
-            if ( spriteBit || (gridBit && cellValue) ) {
+            if ( GAME_ENGINE->hasEnded ) {
+                *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
+                *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
+            }
+            else if ( spriteBit || (gridBit && cellValue) ) {
                 *line1Ptr++ = A_REVERSE | '|'; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
                 *line2Ptr++ = A_REVERSE | '|'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
-            } else {
+            }
+            else {
                 *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
                 *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
             }
@@ -213,15 +247,27 @@ gameBoardDraw(
     }
     TBitGridIteratorDestroy(gridScanner);
     
-    if ( GAME_ENGINE->isPaused ) {
+    if ( GAME_ENGINE->hasEnded ) {
+        int     x = 2 + (4 * THE_BOARD->dimensions.w - gameOverStringsLen) / 2;
+        int     y = THE_BOARD->dimensions.h - 4;
+        
+        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[0]);
+        wattron(window_ptr, A_BLINK);
+        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[1]);
+        wattroff(window_ptr, A_BLINK);
+        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[2]);
+        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[3]);
+        mvwprintw(window_ptr, y, x, "%s", gameOverStrings[4]);
+    }
+    else if ( GAME_ENGINE->isPaused ) {
         int     x = 2 + (4 * THE_BOARD->dimensions.w - gamePausedStringsLen) / 2;
         int     y = THE_BOARD->dimensions.h - 4;
         
-        wattron(window_ptr, A_BLINK);
         mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[0]);
+        wattron(window_ptr, A_BLINK);
         mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[1]);
-        mvwprintw(window_ptr, y, x, "%s", gamePausedStrings[2]);
         wattroff(window_ptr, A_BLINK);
+        mvwprintw(window_ptr, y, x, "%s", gamePausedStrings[2]);
     }
 
 #undef THE_PIECE
@@ -423,31 +469,36 @@ helpDraw(
     const void      *context
 )
 {
+#define THE_KEYMAP  ((TKeymap*)context)
+
     wclear(window_ptr);
     
-    mvwprintw(window_ptr, 2, 2, "P,p          pause");
+    mvwprintw(window_ptr, 2, 2, "%-13.13spause", TKeymapKeySummaryForEvent(THE_KEYMAP, TGameEngineEventTogglePause));
     mvwprintw(window_ptr, 3, 2, "Q,q           quit");
+    mvwprintw(window_ptr, 4, 2, "%-13.13sreset", TKeymapKeySummaryForEvent(THE_KEYMAP, TGameEngineEventReset));
     wattron(window_ptr, A_UNDERLINE);
-        mvwprintw(window_ptr, 5, 1, "             rotate ");
+        mvwprintw(window_ptr, 6, 1, "             rotate ");
     wattroff(window_ptr, A_UNDERLINE);
-    mvwprintw(window_ptr, 6, 2, "A,a     -clockwise");
-    mvwprintw(window_ptr, 7, 2, "S,s     +clockwise");
+    mvwprintw(window_ptr, 7, 2, "%-8.8s-clockwise", TKeymapKeySummaryForEvent(THE_KEYMAP, TGameEngineEventRotateAntiClockwise));
+    mvwprintw(window_ptr, 8, 2, "%-8.8s+clockwise", TKeymapKeySummaryForEvent(THE_KEYMAP, TGameEngineEventRotateClockwise));
     wattron(window_ptr, A_UNDERLINE);
-        mvwprintw(window_ptr, 9, 1, "              shift ");
+        mvwprintw(window_ptr, 10, 1, "              shift ");
     wattroff(window_ptr, A_UNDERLINE);
     
     if ( doesSupportUTF8() ) {
-        mvwprintw(window_ptr, 10, 2, "← →    left, right");
-        mvwprintw(window_ptr, 11, 2, " ↓       soft drop");
+        mvwprintw(window_ptr, 11, 2, "← →    left, right");
+        mvwprintw(window_ptr, 12, 2, " ↓       soft drop");
     } else {
-        mvwaddch(window_ptr, 10, 2, ACS_LARROW);
-        mvwaddch(window_ptr, 10, 4, ACS_RARROW);
-        mvwprintw(window_ptr, 10, 5, "    left, right");
-        mvwaddch(window_ptr, 11, 3, ACS_DARROW);
-        mvwprintw(window_ptr, 11, 4, "       soft drop");
+        mvwaddch(window_ptr, 11, 2, ACS_LARROW);
+        mvwaddch(window_ptr, 11 , 4, ACS_RARROW);
+        mvwprintw(window_ptr, 11, 5, "    left, right");
+        mvwaddch(window_ptr, 12, 3, ACS_DARROW);
+        mvwprintw(window_ptr, 12, 4, "       soft drop");
     }
     
-    mvwprintw(window_ptr, 12, 2, "D,d     hard drop");
+    mvwprintw(window_ptr, 13, 2, "%-9.9shard drop", TKeymapKeySummaryForEvent(THE_KEYMAP, TGameEngineEventHardDrop));
+    
+#undef THE_KEYMAP
 }
 
 //
@@ -467,19 +518,27 @@ main(
     char * const        argv[]
 )
 {
-    WINDOW              *mainWindow = NULL;
-    int                 keyCh, screenHeight, screenWidth;
-    int                 wantGameBoardWidth = 10, wantGameBoardHeight = 20;
     unsigned int        idx;
     
     TGameEngine         *gameEngine = NULL;
+    TKeymap             gameKeymap;
+    
+    WINDOW              *mainWindow = NULL;
+    
+    bool                areStatsDisplayed = true, isGameTitleDisplayed = true;
     tui_window_ref      gameWindows[TWindowIndexMax];
     tui_window_rect_t   gameWindowsBounds[TWindowIndexMax];
-    unsigned int        gameWindowsUpdate = 0, gameWindowsEnabled = 0;
-    bool                areStatsDisplayed = true, isGameTitleDisplayed = true;
-    bool                noAlternateWidth = false;
+    int                 keyCh, screenHeight, screenWidth, availScreenWidth, availScreenHeight,
+                        gameBoardLeadMargin, gameBoardWidth, gameBoardHeight;
+    int                 wantGameBoardWidth = 10, wantGameBoardHeight = 20;
+    unsigned int        gameWindowsEnabled = 0;
+    bool                haveRetriedWidth = false, haveRetriedHeight = false, doDimensionRetry = false;
+    
+    unsigned int        startingLevel = 0;
     
     setlocale(LC_ALL, "");
+    
+    TKeymapInit(&gameKeymap);
     
     // Parse CLI arguments:
     while ( (keyCh = getopt_long(argc, argv, cliArgOptsStr, cliArgOpts, NULL)) != -1 ) {
@@ -494,6 +553,31 @@ main(
             
             case 'H':
                 if ( ! parseHeight(optarg, &wantGameBoardHeight) ) exit(EINVAL);
+                break;
+            
+            case 'l': {
+                char    *endptr = NULL;
+                long    v = strtol(optarg, &endptr, 0);
+                
+                if ( endptr > optarg ) {
+                    if ( v < 0 || v > 9 ) {
+                        fprintf(stderr, "ERROR:  level number must be between 0 and 9: %ld\n", v);
+                        exit(EINVAL);
+                    }
+                    startingLevel = v;
+                } else {
+                    fprintf(stderr, "ERROR:  invalid level number: %s\n", optarg);
+                    exit(EINVAL);
+                }
+                break;
+            }
+                
+            case 'k':
+                TKeymapInitWithFile(&gameKeymap, optarg);
+                break;
+            
+            case 'U':
+                gAllowUTF8 = true;
                 break;
         }
     }
@@ -536,37 +620,52 @@ main(
     if ( screenHeight < 50 ) {
         isGameTitleDisplayed = false;
     }
-    
+
+retry_board_dims:
+
     // Given what's going to be displayed, figure out how much space is left:
-    int     dW = screenWidth - (1 + 22 + 1) - ((areStatsDisplayed) ? 1 + 20 + 1 : 0) - 2;
-    int     dH = screenHeight - (isGameTitleDisplayed ? 6 : 0) - 4;
-    int     gameBoardWidth = dW / 4, gameBoardLeadMargin = 0;
-    int     gameBoardHeight = dH / 2;
+    availScreenWidth = screenWidth - (1 + 22 + 1) - ((areStatsDisplayed) ? 1 + 20 + 1 : 0);
+    availScreenHeight = screenHeight - (isGameTitleDisplayed ? 6 : 0);
+    gameBoardWidth = availScreenWidth / 4 - 2;
+    gameBoardLeadMargin = 0;
+    gameBoardHeight = availScreenHeight / 2 - 2;
     
     // Check to ensure the desired dimensions work:
     if ( wantGameBoardWidth <= gameBoardWidth ) {
         if ( wantGameBoardWidth > 0 ) gameBoardWidth = wantGameBoardWidth;
     } else {
-        delwin(mainWindow);
-        endwin();
-        refresh();
-        printf("Your terminal window is not wide enough to display the game board.\n\n");
-        exit(1);
+        if ( ! haveRetriedWidth && areStatsDisplayed ) {
+            areStatsDisplayed = false;
+            haveRetriedWidth = true;
+            doDimensionRetry = true;
+        } else {
+            delwin(mainWindow);
+            endwin();
+            refresh();
+            printf("Your terminal window is not wide enough to display the game board.\n\n");
+            exit(1);
+        }
     }
     if ( wantGameBoardHeight <= gameBoardHeight ) {
         if ( wantGameBoardHeight > 0 ) gameBoardHeight = wantGameBoardHeight;
     } else {
-        delwin(mainWindow);
-        endwin();
-        refresh();
-        printf("Your terminal window lacks enough rows to display the game board.\n\n");
-        exit(1);
+        if ( ! haveRetriedHeight && isGameTitleDisplayed ) {
+            isGameTitleDisplayed = false;
+            haveRetriedHeight = true;
+            doDimensionRetry = true;
+        } else {
+            delwin(mainWindow);
+            endwin();
+            refresh();
+            printf("Your terminal window lacks enough rows to display the game board.\n\n");
+            exit(1);
+        }
     }
-    
-    if ( noAlternateWidth ) {
-        gameBoardLeadMargin = 4 * ((gameBoardWidth - 10) / 2);
-        gameBoardWidth = 10;
+    if ( doDimensionRetry ) {
+        doDimensionRetry = false;
+        goto retry_board_dims;
     }
+    gameBoardLeadMargin = (availScreenWidth - (4 * gameBoardWidth + 2)) / 2 - 1;
     
     // Setup window bounds rects:
     if ( areStatsDisplayed ) {
@@ -578,7 +677,7 @@ main(
                                                     );
     }
     gameWindowsBounds[TWindowIndexGameBoard] = tui_window_rect_make(
-                                                    1 + (areStatsDisplayed ? (1 + 20) : 0) + gameBoardLeadMargin,
+                                                    1 + (areStatsDisplayed ? (20 + 1) : 0) + gameBoardLeadMargin,
                                                     isGameTitleDisplayed ? 7 : 1,
                                                     gameBoardWidth * 4 + 4,
                                                     gameBoardHeight * 2 + 2
@@ -599,7 +698,7 @@ main(
                                                     screenWidth - 22 - 1,
                                                     isGameTitleDisplayed ? 31 : 25,
                                                     22,
-                                                    14
+                                                    15
                                                 );
     
     
@@ -618,7 +717,7 @@ main(
     init_pair(4, COLOR_WHITE, COLOR_YELLOW);*/
     
     // Create the game engine:
-    gameEngine = TGameEngineCreate(1, gameBoardWidth, gameBoardHeight);
+    gameEngine = TGameEngineCreate(1, gameBoardWidth, gameBoardHeight, startingLevel);
     
     //
     // Initialize game windows:
@@ -669,7 +768,7 @@ main(
     gameWindows[TWindowIndexHelp] = tui_window_alloc(
                                                 gameWindowsBounds[TWindowIndexHelp], tui_window_opts_title_align_right,
                                                 "HELP", 0,
-                                                helpDraw, NULL);
+                                                helpDraw, (const void*)&gameKeymap);
     if ( ! gameWindows[TWindowIndexHelp] ) {
         tui_window_free(gameWindows[TWindowIndexNextTetromino]);
         tui_window_free(gameWindows[TWindowIndexScoreboard]);
@@ -707,202 +806,65 @@ main(
     for ( idx = 0; idx < TWindowIndexMax; idx++ ) if (gameWindowsEnabled & (1 << idx)) tui_window_refresh(gameWindows[idx], 1);
     doupdate();
     
-    struct timespec     t0, t1, dt, nextDrop;
-    unsigned long       frameCount = 0;
-    unsigned int        extraPoints = 0;
-    bool                isSoftDrop = false;
-    
-    // Start timer:
-    t0.tv_sec = t0.tv_nsec = 0;
-    clock_gettime(CLOCK_REALTIME, &t1);
-    
-    timespec_add(&nextDrop, &t1, &gameEngine->tPerLine);
-    
     timeout(0);
     
+    TGameEngineTick(gameEngine, TGameEngineEventStartGame);
+    
     while ( 1 ) {
+        TGameEngineUpdateNotification   updateNotifications;
+        TGameEngineEvent                gameEngineEvent = TGameEngineEventNoOp;
+        
         keyCh = getch();
         if ( (keyCh == 'Q') || (keyCh == 'q') ) {
             break;
         }
-        if ( gameEngine->isPaused ) {
-            if ( (keyCh == 'P') || (keyCh == 'p') ) gameEngine->isPaused = false;
-        } else {
-            t0 = t1;
-            clock_gettime(CLOCK_REALTIME, &t1);
-        
-            if ( timespec_is_ordered_asc(&nextDrop, &t1) ) {
-                // Drop the piece:
-                TGridPos    newP = gameEngine->currentSprite.P;
-                uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-            
-                newP.j++;
-                board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
-                if ( (board4x4 & piece4x4) == 0 ) {
-                    gameEngine->currentSprite.P.j++;
-                    gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                    extraPoints = 0;
-                    isSoftDrop = false;
-                } else {
-                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, TSpriteGet4x4(&gameEngine->currentSprite));
-                    TGameEngineCheckForCompleteRows(gameEngine);
-                    gameEngine->scoreboard.score += extraPoints;
-                    extraPoints = 0;
-                    isSoftDrop = false;
-                    TGameEngineChooseNextPiece(gameEngine);
-                    gameWindowsUpdate |= (1 << TWindowIndexGameBoard) | (1 << TWindowIndexStats) | (1 << TWindowIndexScoreboard) | (1 << TWindowIndexNextTetromino);
-                }
-                timespec_add(&nextDrop, &t1, &gameEngine->tPerLine);
-            }
-        
-            switch ( keyCh ) {
-                case 'p':
-                case 'P':
-                    gameEngine->isPaused = true;
-                    gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                    break;
-                case ' ':
-                case 's':
-                case 'S': {
-                    // Test for ok:
-                    TSprite         newOrientation = TSpriteMakeRotated(&gameEngine->currentSprite);
-                    uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newOrientation.P);
-                    uint16_t        piece4x4 = TSpriteGet4x4(&newOrientation);
-                
-                    if ( (board4x4 & piece4x4) == 0 ) {
-                        gameEngine->currentSprite = newOrientation;
-                        gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                    }
-                    break;
-                }
-                case 'a':
-                case 'A': {
-                    // Test for ok:
-                    TSprite         newOrientation = TSpriteMakeRotatedAnti(&gameEngine->currentSprite);
-                    uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newOrientation.P);
-                    uint16_t        piece4x4 = TSpriteGet4x4(&newOrientation);
-                
-                    if ( (board4x4 & piece4x4) == 0 ) {
-                        gameEngine->currentSprite = newOrientation;
-                        gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                    }
-                    break;
-                }
-                /*case KEY_UP: {
-                    // Test for ok:
-                    TGridPos    newP = gameEngine->currentSprite.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-                
-                    newP.j--;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
-                    if ( (board4x4 & piece4x4) == 0 ) {
-                        gameEngine->currentSprite.P.j--;
-                        gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                    }
-                    break;
-                }*/
-                case KEY_DOWN: {
-                    // Test for ok:
-                    TGridPos    newP = gameEngine->currentSprite.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-                
-                    newP.j++;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
-                    if ( (board4x4 & piece4x4) == 0 ) {
-                        gameEngine->currentSprite.P.j++;
-                        gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                        isSoftDrop = true;
-                        extraPoints++;
-                    } else {
-                        TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, TSpriteGet4x4(&gameEngine->currentSprite));
-                        TGameEngineCheckForCompleteRows(gameEngine);
-                        gameEngine->scoreboard.score += extraPoints;
-                        extraPoints = 0;
-                        isSoftDrop = false;
-                        TGameEngineChooseNextPiece(gameEngine);
-                        gameWindowsUpdate |= (1 << TWindowIndexGameBoard) | (1 << TWindowIndexStats) | (1 << TWindowIndexScoreboard) | (1 << TWindowIndexNextTetromino);
-                    }
-                    timespec_add(&nextDrop, &t1, &gameEngine->tPerLine);
-                    break;
-                }
-                case 'D':
-                case 'd': {
-                    extraPoints = 0;
-                    isSoftDrop = false;
-                    
-                    while ( 1 ) {
-                        // Test for ok:
-                        TGridPos    newP = gameEngine->currentSprite.P;
-                        uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-                
-                        newP.j++;
-                        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
-                        if ( (board4x4 & piece4x4) == 0 ) {
-                            gameEngine->currentSprite.P.j++;
-                            gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                            extraPoints += 2;
-                        } else {
-                            break;
-                        }
-                    }
-                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, TSpriteGet4x4(&gameEngine->currentSprite));
-                    TGameEngineCheckForCompleteRows(gameEngine);
-                    gameEngine->scoreboard.score += extraPoints;
-                    TGameEngineChooseNextPiece(gameEngine);
-                    gameWindowsUpdate |= (1 << TWindowIndexGameBoard) | (1 << TWindowIndexStats) | (1 << TWindowIndexScoreboard) | (1 << TWindowIndexNextTetromino);
-                    break;
-                }
-                case KEY_LEFT: {
-                    // Test for ok:
-                    TGridPos    newP = gameEngine->currentSprite.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-                
-                    newP.i--;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
-                    if ( (board4x4 & piece4x4) == 0 ) {
-                        gameEngine->currentSprite.P.i--;
-                        gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                    }
-                    break;
-                }
-                case KEY_RIGHT: {
-                    // Test for ok:
-                    TGridPos    newP = gameEngine->currentSprite.P;
-                    uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-                
-                    newP.i++;
-                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
-                    if ( (board4x4 & piece4x4) == 0 ) {
-                        gameEngine->currentSprite.P.i++;
-                        gameWindowsUpdate |= (1 << TWindowIndexGameBoard);
-                    }
-                    break;
-                }
-            
-            }
-        
-            // Only check those windows we're displaying:
-            gameWindowsUpdate &= gameWindowsEnabled;
-            if ( gameWindowsUpdate ) {
-                refresh();
-                idx = 0;
-                while ( gameWindowsUpdate && (idx < TWindowIndexMax) ) {
-                    if ( gameWindowsUpdate & 0x1 ) tui_window_refresh(gameWindows[idx], 1);
-                    gameWindowsUpdate >>= 1;
-                    idx++;
-                }
-                doupdate();
-            }
-        
-            timespec_add(&gameEngine->tElapsed, &gameEngine->tElapsed, timespec_subtract(&dt, &t1, &t0));
-            frameCount++;
-        
-        
-            double      dt_sec = timespec_to_double(&gameEngine->tElapsed);
-        
-            mvprintw(screenHeight - 1, 0, "%12.3lg frames/sec", (double)frameCount / dt_sec);
+        switch ( keyCh ) {
+            case '\r':
+            case '\n':
+                gameEngineEvent = TGameEngineEventTogglePause;
+                break;
+            case KEY_DOWN:
+                gameEngineEvent = TGameEngineEventSoftDrop;
+                break;
+                gameEngineEvent = TGameEngineEventHardDrop;
+                break;
+            case KEY_LEFT:
+                gameEngineEvent = TGameEngineEventMoveLeft;
+                break;
+            case KEY_RIGHT:
+                gameEngineEvent = TGameEngineEventMoveRight;
+                break;
+            default:
+                gameEngineEvent = TKeymapEventForKey(&gameKeymap, keyCh);
+                break;
         }
+        
+        updateNotifications = TGameEngineTick(gameEngine, gameEngineEvent);
+        
+        if ( updateNotifications ) {
+            refresh();
+            
+            if ( updateNotifications & TGameEngineUpdateNotificationGameBoard ) {
+                tui_window_refresh(gameWindows[TWindowIndexGameBoard], 1);
+            }
+            if ( updateNotifications & TGameEngineUpdateNotificationScoreboard ) {
+                tui_window_refresh(gameWindows[TWindowIndexScoreboard], 1);
+                if ( gameWindowsEnabled & TWindowIndexStats ) {
+                    tui_window_refresh(gameWindows[TWindowIndexStats], 1);
+                }
+            }
+            if ( updateNotifications & TGameEngineUpdateNotificationNextTetromino ) {
+                tui_window_refresh(gameWindows[TWindowIndexNextTetromino], 1);
+            }
+            doupdate();
+        }
+            
+        double      dt_sec = timespec_to_double(&gameEngine->tElapsed);
+    
+        mvprintw(screenHeight - 1, 0, "%12.3lg ticks/sec", (double)gameEngine->tickCount / dt_sec);
     }
+    
+    double      dt_sec = timespec_to_double(&gameEngine->tElapsed);
     
     // Dispose of all windows:
     for ( idx = 0; idx < TWindowIndexMax; idx++ ) if (gameWindowsEnabled & (1 << idx)) tui_window_free(gameWindows[idx]);
@@ -910,9 +872,7 @@ main(
     endwin();
     refresh();
     
-    double      dt_sec = timespec_to_double(&gameEngine->tElapsed);
-    
-    printf("%lg seconds, %lu frames = %lg frames/sec\n", dt_sec, frameCount, (double)frameCount / dt_sec);
+    printf("%lg seconds, %lu ticks = %12.3lg ticks/sec\n", dt_sec, gameEngine->tickCount, (double)gameEngine->tickCount / dt_sec);
     
     return 0;
 }
