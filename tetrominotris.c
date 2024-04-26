@@ -734,7 +734,7 @@ retry_board_dims:
         fprintf(stderr, "ERROR:  unable to create game board window\n");
         exit(1);
     }
-    gameWindowsEnabled = 1 << TWindowIndexGameBoard;
+    gameWindowsEnabled |= 1 << TWindowIndexGameBoard;
     
     gameWindows[TWindowIndexScoreboard] = tui_window_alloc(
                                                 gameWindowsBounds[TWindowIndexScoreboard], tui_window_opts_title_align_right,
@@ -849,7 +849,7 @@ retry_board_dims:
             }
             if ( updateNotifications & TGameEngineUpdateNotificationScoreboard ) {
                 tui_window_refresh(gameWindows[TWindowIndexScoreboard], 1);
-                if ( gameWindowsEnabled & TWindowIndexStats ) {
+                if ( gameWindowsEnabled & (1 << TWindowIndexStats) ) {
                     tui_window_refresh(gameWindows[TWindowIndexStats], 1);
                 }
             }
