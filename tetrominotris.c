@@ -538,6 +538,9 @@ main(
     
     setlocale(LC_ALL, "");
     
+    // Disable tab-based screen movement:
+    setenv("NCURSES_NO_HARD_TABS", "1", 0);
+    
     TKeymapInit(&gameKeymap);
     
     // Parse CLI arguments:
