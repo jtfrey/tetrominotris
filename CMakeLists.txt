@@ -70,3 +70,10 @@ target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES} m)
 #
 add_executable(tetrominotris_demo TTetrominos.c TBitGrid.c tetrominotris_demo.c)
 target_link_libraries(tetrominotris_demo PRIVATE m)
+
+#
+# Install target(s):
+#
+include(GNUInstallDirs)
+install(TARGETS tetrominotris)
+install(FILES example-keymap.txt TYPE SYSCONF)
