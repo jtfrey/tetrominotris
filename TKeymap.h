@@ -1,3 +1,44 @@
+/*	TKeymap.h
+	Copyright (c) 2024, J T Frey
+*/
+
+/*!
+	@header Key-to-event mappings
+	Originally the game had a fixed set of key bindings that associated
+	game events with keys the user can press.  But most games allow the
+	user to alter those settings to fit their own preferred key layout.
+	
+	The game will always respond to the left- and right-arrow keys by
+	moving the in-play tetromino; it will always respond to the down-
+	arrow by performing a soft drop of the tetromino.  But the user can
+	assign additional keys to those events -- and all others -- by means
+	of a keymap file.
+	
+	The file is very simply designed.  Hash symbols delineate comments.
+	Mappings are of the form
+	
+	    <keycap>{ <keycap> ..} = <event>
+	
+	where the events are
+	
+	    NOOP
+	    RESET
+	    PAUSE
+	    HARD DROP
+	    SOFT DROP
+	    MOVE LEFT
+	    MOVE RIGHT
+	    ROTATE CLOCKWISE
+	    ROTATE ANTICLOCKWISE
+	
+	No key can be assigned to multiple events, and all events must be
+	bound to at least one key -- except MOVE LEFT, MOVE RIGHT, and SOFT
+	DROP since they are always bound to the arrow keys as mentioned
+	above.
+	
+	The <keycap> is a single symbol, except for the spacebar which uses
+	the word SPACE or SPACEBAR.
+*/
 
 #ifndef __TKEYMAP_H__
 #define __TKEYMAP_H__

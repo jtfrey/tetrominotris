@@ -1,6 +1,8 @@
+/*	TBitGrid.c
+	Copyright (c) 2024, J T Frey
+*/
 
 #include "TBitGrid.h"
-
 
 typedef union TBitGridChannelPtr {
             uint8_t     *b8;
@@ -95,7 +97,7 @@ __TBitGridIteratorNextFullRow_8b_1C(
                 }
             }
         } else {
-            iterator->grid[ITERATOR->channelIdx].b8 += nFullWords + (iterator->nPartialBits != 0);
+            iterator->grid[ITERATOR->channelIdx].b8 += (nFullWords - 1) + (iterator->nPartialBits != 0);
         }
     }
     return false;
@@ -219,7 +221,7 @@ __TBitGridIteratorNextFullRow_8b_NC(
             channelIdx = 0;
             while ( channelMask ) {
                 if ( (1 << channelIdx) & channelMask ) {
-                    iterator->grid[channelIdx].b8 += nFullWords + (iterator->nPartialBits != 0);
+                    iterator->grid[channelIdx].b8 += (nFullWords - 1) + (iterator->nPartialBits != 0);
                     channelMask &= ~(1 << channelIdx);
                 }
                 channelIdx++;
@@ -305,7 +307,7 @@ __TBitGridIteratorNextFullRow_16b_1C(
                 }
             }
         } else {
-            iterator->grid[ITERATOR->channelIdx].b16 += nFullWords + (iterator->nPartialBits != 0);
+            iterator->grid[ITERATOR->channelIdx].b16 += (nFullWords - 1) + (iterator->nPartialBits != 0);
         }
     }
     return false;
@@ -429,7 +431,7 @@ __TBitGridIteratorNextFullRow_16b_NC(
             channelIdx = 0;
             while ( channelMask ) {
                 if ( (1 << channelIdx) & channelMask ) {
-                    iterator->grid[channelIdx].b16 += nFullWords + (iterator->nPartialBits != 0);
+                    iterator->grid[channelIdx].b16 += (nFullWords - 1) + (iterator->nPartialBits != 0);
                     channelMask &= ~(1 << channelIdx);
                 }
                 channelIdx++;
@@ -515,7 +517,7 @@ __TBitGridIteratorNextFullRow_32b_1C(
                 }
             }
         } else {
-            iterator->grid[ITERATOR->channelIdx].b32 += nFullWords + (iterator->nPartialBits != 0);
+            iterator->grid[ITERATOR->channelIdx].b32 += (nFullWords - 1) + (iterator->nPartialBits != 0);
         }
     }
     return false;
@@ -639,7 +641,7 @@ __TBitGridIteratorNextFullRow_32b_NC(
             channelIdx = 0;
             while ( channelMask ) {
                 if ( (1 << channelIdx) & channelMask ) {
-                    iterator->grid[channelIdx].b32 += nFullWords + (iterator->nPartialBits != 0);
+                    iterator->grid[channelIdx].b32 += (nFullWords - 1) + (iterator->nPartialBits != 0);
                     channelMask &= ~(1 << channelIdx);
                 }
                 channelIdx++;
@@ -725,7 +727,7 @@ __TBitGridIteratorNextFullRow_64b_1C(
                 }
             }
         } else {
-            iterator->grid[ITERATOR->channelIdx].b64 += nFullWords + (iterator->nPartialBits != 0);
+            iterator->grid[ITERATOR->channelIdx].b64 += (nFullWords - 1) + (iterator->nPartialBits != 0);
         }
     }
     return false;
@@ -849,7 +851,7 @@ __TBitGridIteratorNextFullRow_64b_NC(
             channelIdx = 0;
             while ( channelMask ) {
                 if ( (1 << channelIdx) & channelMask ) {
-                    iterator->grid[channelIdx].b64 += nFullWords + (iterator->nPartialBits != 0);
+                    iterator->grid[channelIdx].b64 += (nFullWords - 1) + (iterator->nPartialBits != 0);
                     channelMask &= ~(1 << channelIdx);
                 }
                 channelIdx++;

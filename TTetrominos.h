@@ -1,3 +1,29 @@
+/*	TTetrominos.h
+	Copyright (c) 2024, J T Frey
+*/
+
+/*!
+	@header Tetrominos (oes?)
+	A domino is a rectangular brick composed of two squares:  there can
+	be only one way that two squares are adjoined.  For the case of four
+	squares, there are seven unique arrangements called tetrominos:
+	
+            ####  ###  ###  ###   ##     ##   ##
+	              #     #     #    ##   ##    ##
+	
+	The maximum width is four squares; if the first tetromino were rotated
+	90 degrees the maximum height would be four squares.  A 4x4 bitmap
+	equates with a single 16-bit word, so each tetromino in four orientations
+	(0, 90, 180, 270 degrees of rotation) can fit in a single 64-bit word.
+	
+	Assuming bit 0 is the upper-left corner of the tetromino and bit 15 is
+	the lower-right corner, moving the bitmap inside the cell is easily
+	effected with bit masking and shifting operations.  E.g. a right shift
+	by 4 bits discards row 0, leaving row 1 (then 2 and 3) in its place.
+	
+	This unit contains the seven four-orientation tetrominos (packed in
+	64-bit words) and functions to manipulate them.
+*/
 
 #ifndef __TTETROMINOS_H__
 #define __TTETROMINOS_H__

@@ -1,3 +1,6 @@
+/*	TTetrominos.c
+	Copyright (c) 2024, J T Frey
+*/
 
 #include "TTetrominos.h"
 

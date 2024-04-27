@@ -1,3 +1,66 @@
+/*	TBitGrid.h
+	Copyright (c) 2024, J T Frey
+*/
+
+/*!
+	@header Bit grids
+	A bit grid forms the heart of the game.  The game board is at its most
+	basic a 2D grid of single-bit values:  filled or empty.  The bits in a
+	row are grouped into words of varying size; the number of bits per word
+	can be chosen explicitly (8, 16, 32, or 64) or by a formula meant to
+	simultaneously minimize the number of unused bits in the row and maximize
+	the number of bits per word.  Based on the typical grid dimensions for
+	the game, 16-bit words tend to win out.
+	
+	Bit 0 of word 0 corresponds with the upper-left corner of the game board.
+	Each row consists of enough N-bit words to span the columns of the game
+	board (a number of words per row), and each successive row going down the
+	game board is offset from the start of the grid by a multiple of the words
+	per row.  There thus exists a straightforward mapping between a grid
+	position (i,j) and a word index and bit-within-word index (W,b).
+	
+	Since tetrominoes exist as a 16-bit representation of a 4x4 bitmap, testing
+	for collisions is straightfoward.  Given the position of the in-play
+	tetromino (i,j), the word/bit index is (W,b).  Extracting the 4 bits at
+	(W,b) provides the first row of the 4x4 representation of the grid state;
+	the 4 bits from (W + words-per-row,b) provide the second row; etc.  The
+	bitwise-AND of the two (4x4) 16-bit values indicates a collision if non-zero:
+	
+	      tetromino  game board   result
+	        ....        ....       ....
+	        .##.   &    ....   =   ....
+	        .##.        ..#.       ..#.
+	        ....        ####       ....
+	      0x0660      0xF400     0x0400
+    
+    In the circumstance that there is no collision, the tetromino can be added
+    to the game board by bitwise-OR:
+	
+	      tetromino  game board   result
+	        ....        ....       ....
+	        .##.   |    ....   =   .##.
+	        .##.        #..#       ####
+	        ....        ####       ####
+	      0x0660      0xF900     0xFF60
+	
+	Associating additional information with each grid position is accomplished
+	by multiple bit planes.  Operations that manipulate or enumerate the grid
+	values can target one or more of the bit planes using bit masks (plane
+	0 = 1 << 0, plane 1 = 1 << 1, etc.).  Hit detection may only make use of
+	plane 0, but the removal of rows will shift the values in every bit plane.
+	(Note that this is how color information is optionally added to the grid
+	cells.)
+	
+	Two enumeration methods are supplied.  Both start at position (0,0) in the
+	upper-left corner and proceed across columns and then down rows.  The first
+	method returns the value at each grid cell (enumerating all bits is useful
+	for drawing the game board on-screen).  The second enumerates rows for
+	which every column (bit) is set (detect completed rows by enumerating bit
+	0 only).  A row is full when all whole-word values have all bits set (e.g.
+	0xFFFF for 16-bit words) and the possible final partial word has the lowest
+	N bits set.  If the game board is 16 squares wide, then a full row is
+	established by bitwise-AND'ing a single 16-bit word with 0xFFFF.
+*/
 
 #ifndef __TBITGRID_H__
 #define __TBITGRID_H__

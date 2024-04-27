@@ -1,16 +1,42 @@
+/*	tui_window.h
+	Copyright (c) 2024, J T Frey
+*/
+
+/*!
+	@header TUI Windows
+	The presentation of an ncurses window on-screen follows a rigorously-
+	procedural API.  The tui_window API encapsulates window frame information
+	and drawing with offload of the drawing of window content to an external
+	callback function provided by the consumer.
+	
+	The callback function should make use of ncurses window-oriented API
+	calls when drawing -- mvwprintf() and wattron(), for example.  The actual
+	content area of the window runs from (1,1) to (w,h); drawing outside that
+	range is not recommended.
+*/
 
 #ifndef __TUI_WINDOW_H__
 #define __TUI_WINDOW_H__
 
 #include "tetrominotris_config.h"
 
-
-
+/*
+ * @typedef tui_window_rect_t
+ *
+ * A rectangle has an origin at (x,y) and a size
+ * w x h.
+ */
 typedef struct {
     int             x, y;
     unsigned int    w, h;
 } tui_window_rect_t;
 
+/*
+ * @function tui_window_rect_make
+ *
+ * Initialize and return a rectangle data structure using the
+ * given origin and size parameters.
+ */
 static inline tui_window_rect_t
 tui_window_rect_make(
     int             x,
@@ -22,8 +48,6 @@ tui_window_rect_make(
     tui_window_rect_t   R = { .x = x, .y = y, .w = w, .h = h };
     return R;
 }
-
-
 
 /*
  * @enum TUI window options

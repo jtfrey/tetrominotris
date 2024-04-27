@@ -10,6 +10,7 @@ project(tetrominotris
     )
 
 option(TBOARD_DEBUG "Enable debug printing in TBoard code" ON)
+option(ENABLE_COLOR_DISPLAY "Allow for color display." ON)
 
 #
 # Locate the curses tui library:
@@ -53,10 +54,6 @@ set(TETROMINOTRIS_VERSION ${tetrominotris_VERSION})
 configure_file(tetrominotris_config.h.in tetrominotris_config.h)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-add_executable(TBitGrid_demo TBitGrid.c)
-target_compile_definitions(TBitGrid_demo PRIVATE TBITGRID_DEBUG TBITGRID_DEMO)
-target_link_libraries(TBitGrid_demo PRIVATE m)
-
 #
 # The game:
 #
@@ -64,12 +61,6 @@ add_executable(tetrominotris TTetrominos.c TBitGrid.c TGameEngine.c TKeymap.c tu
 target_include_directories(tetrominotris PRIVATE ${CURSES_INCLUDE_DIRS})
 target_compile_options(tetrominotris PRIVATE ${CURSES_CFLAGS})
 target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES} m)
-
-#
-# The library demo:
-#
-add_executable(tetrominotris_demo TTetrominos.c TBitGrid.c tetrominotris_demo.c)
-target_link_libraries(tetrominotris_demo PRIVATE m)
 
 #
 # Install target(s):

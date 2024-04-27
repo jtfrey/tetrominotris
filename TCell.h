@@ -1,3 +1,24 @@
+/*	TCell.h
+	Copyright (c) 2024, J T Frey
+*/
+
+/*!
+	@header Grid cell
+	A bit grid contains one or more bitmap planes; the aggregation of
+	each plane's bit from an arbitrary grid position is the cell value.
+	There can be anywhere from 1 to 8 bit planes in a grid, so the
+	TCell is a wrapper for an 8-bit unsigned integer.
+	
+	Bit 0 is used to determine positional occupation on the grid:  a
+	1 means filled, 0 means empty.  The same bit is used regardless
+	of whether or not color information is present on the grid.
+	
+	In color mode, two additional channels (bits 1 and 2) allow up to
+	four colors to be associated with the cells.
+	
+	All functions are very simple and are declared for static
+	inlining to avoid function calls as much as possible.
+*/
 
 #ifndef __TCELL_H__
 #define __TCELL_H__
@@ -11,9 +32,7 @@
  *
  * - single-bit on/off mode:  the simplest form of the game
  *       which lacks all TUI embellishment
- * - on/off + flash mode:  adds a flashing state so that
- *       completed rows can be flashed before disappearing
- *  - color mode:  leverages a 2-bit (4-color) palette;
+ * - color mode:  leverages a 2-bit (4-color) palette;
  *       transparency is implicit in the on/off flag and
  *       flash-on-completion is also used
  *
@@ -21,8 +40,7 @@
  * a color game board requires a TBitGrid of four channels.
  */
 enum {
-    TCellColorMask      = 0b00001100,
-    TCellIsFlashing     = 0b00000010,
+    TCellColorMask      = 0b00000110,
     TCellIsOccupied     = 0b00000001
 };
 
@@ -48,38 +66,19 @@ TCellMake1Bit(
 }
 
 /*
- * @function TCellMake2Bit
+ * @function TCellMake3Bit
  *
  * Initializes and returns a TCell with the on/off state of
- * isOccupied and isFlashing represented.
+ * isOccupied and the given colorIndex represented.
  */
 static inline TCell
-TCellMake2Bit(
+TCellMake3Bit(
     bool        isOccupied,
-    bool        isFlashing
-)
-{
-    return (uint8_t)((isOccupied ? TCellIsOccupied : 0) | 
-                     (isFlashing ? TCellIsFlashing : 0));
-}
-
-/*
- * @function TCellMake4Bit
- *
- * Initializes and returns a TCell with the on/off state of
- * isOccupied and isFlashing and the given colorIndex
- * represented.
- */
-static inline TCell
-TCellMake4Bit(
-    bool        isOccupied,
-    bool        isFlashing,
     int         colorIndex
 )
 {
-    return (uint8_t)((isOccupied ? TCellIsOccupied : 0) | 
-                     (isFlashing ? TCellIsFlashing : 0) |
-                     (colorIndex & TCellColorMask));
+    return (uint8_t)((isOccupied ? TCellIsOccupied : 0) |
+                     ((uint8_t)(colorIndex << 1) & TCellColorMask));
 }
 
 /*
@@ -97,20 +96,6 @@ TCellGetIsOccupied(
 }
 
 /*
- * @function TCellGetIsFlashing
- *
- * Returns true if theCell has the is-flashing bit set, false
- * otherwise.
- */
-static inline bool
-TCellGetIsFlashing(
-    TCell       theCell
-)
-{
-    return ((theCell & TCellIsFlashing) != 0);
-}
-
-/*
  * @function TCellGetColorIndex
  *
  * Returns the color index present in theCell.
@@ -120,7 +105,7 @@ TCellGetColorIndex(
     TCell       theCell
 )
 {
-    return (theCell & TCellColorMask) >> 2;
+    return (theCell & TCellColorMask) >> 1;
 }
     
 #endif /* __TCELL_H__ */

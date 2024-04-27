@@ -1,3 +1,25 @@
+/*	TScoreboard.h
+	Copyright (c) 2024, J T Frey
+*/
+
+/*!
+	@header Scoreboard
+	The scoreboard tracks statistics and scoring information for
+	a game:
+	
+	    - the count of each tetromino type placed on the board
+	    - the number of times each line-clearing type has occurred
+	    - the base point value for each line-clearing type
+	    - the total number of lines cleared
+	    - the number of lines that must be cleared to advance the
+	      level
+	    - the line count at which the level next increases
+	    - the current level
+	    - total points scored
+	    
+	All functions are very simple and are declared for static
+	inlining to avoid function calls as much as possible.
+*/
 
 #ifndef __TSCOREBOARD_H__
 #define __TSCOREBOARD_H__

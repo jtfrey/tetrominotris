@@ -1,3 +1,6 @@
+/*	tui_window.c
+	Copyright (c) 2024, J T Frey
+*/
 
 #include "tui_window.h"
 

@@ -1,3 +1,6 @@
+/*	TKeymap.c
+	Copyright (c) 2024, J T Frey
+*/
 
 #include "TKeymap.h"
 

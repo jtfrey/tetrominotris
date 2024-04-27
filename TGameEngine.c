@@ -1,3 +1,6 @@
+/*	TGameEngine.c
+	Copyright (c) 2024, J T Frey
+*/
 
 #include "TGameEngine.h"
 
@@ -15,20 +18,23 @@ enum {
 
 TGameEngine*
 TGameEngineCreate(
-    unsigned int        nChannels,
-    unsigned int        w,
-    unsigned int        h,
-    unsigned int        startingLevel
+    bool            useColor,
+    unsigned int    w,
+    unsigned int    h,
+    unsigned int    startingLevel
 )
 {
-    TGameEngine         *newEngine = NULL;
-    TBitGrid            *gameBoard = TBitGridCreate(TBitGridWordSizeForce16Bit, nChannels, w, h);
+    TGameEngine     *newEngine = NULL;
+    TBitGrid        *gameBoard = TBitGridCreate(TBitGridWordSizeForce16Bit, useColor ? 3 : 1, w, h);
     
     if ( gameBoard ) {
         newEngine = (TGameEngine*)malloc(sizeof(TGameEngine));    
         if ( newEngine ) {
             //  Associate the bit grid with the new game engine:
             newEngine->gameBoard = gameBoard;
+            
+            // Using color?
+            newEngine->doesUseColor = useColor;
             
             // Fill-in the starting level:
             newEngine->startingLevel = (startingLevel <= 9) ? startingLevel : 9;
@@ -308,9 +314,13 @@ TGameEngineTick(
             }
         
             if ( shouldStopFalling ) {
-                uint16_t            board4x4, piece4x4;
+                uint16_t            board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                 
-                TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, TSpriteGet4x4(&gameEngine->currentSprite));
+                TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, piece4x4);
+                if ( gameEngine->doesUseColor ) {
+                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 1, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x1) ? piece4x4 : 0x0000);
+                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 2, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x2) ? piece4x4 : 0x0000);
+                }
                 TGameEngineCheckForCompleteRows(gameEngine);
                 gameEngine->scoreboard.score += gameEngine->extraPoints;
                 gameEngine->extraPoints = 0;

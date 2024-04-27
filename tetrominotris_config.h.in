@@ -41,6 +41,7 @@
 #endif
 
 #cmakedefine TBOARD_DEBUG
+#cmakedefine ENABLE_COLOR_DISPLAY
 
 /*
  * @typedef TGridPos

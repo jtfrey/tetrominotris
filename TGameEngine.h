@@ -1,3 +1,32 @@
+/*	TGameEngine.h
+	Copyright (c) 2024, J T Frey
+*/
+
+/*!
+	@header Game engine
+	A game engine encapsulates all components that cooperate in managing
+	the game state:
+	
+	    - simple state flags (game is started or ended, game is paused,
+	      game board uses color)
+	    - the game board (bit grid)
+	    - the scoreboard
+	    - the in-play tetromino (as a sprite)
+	    - the next tetromino that will be in-play (as a sprite)
+	    - the state array for the PRNG
+	    - game timing values (elapsed time, time of last tick, time
+	      tetrominos hang per line, future time when in-play tetromino
+	      should automatically drop)
+	
+	The most important function in this unit is TGameEngineTick().  It
+	accepts a single game event (e.g. move tetromino left) and handles
+	all state change required to implement that event (or not).  All
+	timers are updated.  The TGameEngineTick() function should be called
+	in a relatively fast loop that watches for user input.
+	
+	Game events are the very same events that get associated with keys in
+	the TKeymap unit.
+*/
 
 #ifndef __TGAMEENGINE_H__
 #define __TGAMEENGINE_H__
@@ -249,6 +278,7 @@ typedef struct {
     bool                hasBeenStarted;
     bool                isPaused;
     bool                hasEnded;
+    bool                doesUseColor;
     
     // Starting level for the game(s):
     unsigned int        startingLevel;
@@ -290,12 +320,13 @@ typedef struct {
  * @function TGameEngineCreate
  *
  * Create a new game engine with the given game board dimensions ([w]idth and
- * [h]eight) and the given number of bit channels.
+ * [h]eight) and either 1 (useColor = false) or 3 (useColor = true) bit
+ * channels.
  *
  * All elements of the engine are initialized to their starting values.  The
  * startingLevel must be between 0 and 9 (per the original game).
  */
-TGameEngine* TGameEngineCreate(unsigned int nChannels, unsigned int w, unsigned int h, unsigned int startingLevel);
+TGameEngine* TGameEngineCreate(bool useColor, unsigned int w, unsigned int h, unsigned int startingLevel);
 
 /*
  * @function TGameEngineReset
