@@ -225,6 +225,14 @@ typedef struct {
 } TColorPair;
 
 /*
+ * @defined TBASICCOLORPALETTECOUNT
+ *
+ * File-scope arrays must be dimensioned with a compile-time constant,
+ * not a variable even it it has const disposition.
+ */
+#define TBASICCOLORPALETTECOUNT 5
+
+/*
  * @typedef TColorPalette
  *
  * The game associates a palette of three foreground-background pairs
@@ -238,7 +246,7 @@ typedef TColorPair TColorPalette[3];
  *
  * How many color palettes do we provide in basic curses color mode?
  */
-static const int TBasicColorPaletteCount = 5;
+static const int TBasicColorPaletteCount = TBASICCOLORPALETTECOUNT;
 
 /*
  * @constant TBasicColorPalettes
@@ -246,7 +254,7 @@ static const int TBasicColorPaletteCount = 5;
  * The five color palettes we manage to eke out of the basic curses
  * colors.
  */
-static const TColorPalette TBasicColorPalettes[TBasicColorPaletteCount] = {
+static const TColorPalette TBasicColorPalettes[TBASICCOLORPALETTECOUNT] = {
                             {
                                 { COLOR_WHITE, COLOR_CYAN },
                                 { COLOR_BLUE, COLOR_WHITE },
