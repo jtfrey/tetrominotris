@@ -19,7 +19,7 @@ Extracting a 4x4 region of the game board state will also yield a 16-bit word re
 
 <img src="./assets/TetrominoCollision.png" width="480" align="center"/>
 
-When the bitwise AND yields zero, there is no collision, and non-zero implies a collision would occur.  Thus, the move to the right is valid while the move down will place the tetromino on the board at its current position, (4,5).  That act of placing the in-play tetromino on the board happens with a bitwise OR rather than an AND, with the result being written back to the board data:
+When the bitwise AND yields zero there is no collision, whereas non-zero implies a collision would occur.  Thus, the move to the right is valid while the move down will place the tetromino on the board at its current position, (4,5).  That act of placing the in-play tetromino on the board happens with a bitwise OR rather than an AND, with the result being written back to the board data:
 
 <img src="./assets/TetrominoPlacement.png" width="480" align="center"/>
 
