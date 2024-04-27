@@ -77,8 +77,8 @@ usage(
         "    --width/-w <dimension>         choose the game board width\n"
         "    --height/-h <dimension>        choose the game board height\n"
 #ifdef ENABLE_COLOR_DISPLAY
-        "    --color/-c                     use a color game board\n"
-        "    --basic-colors/-1              use basic curses colors rather\n"
+        "    --color/-C                     use a color game board\n"
+        "    --basic-colors/-B              use basic curses colors rather\n"
         "                                   than attempting to use custom palettes\n"
 #endif
         "    --level/-l #                   start the game at this level (0 and\n"
@@ -411,7 +411,7 @@ TCustomColor8BitToCurses(
     uint8_t     byte
 )
 {
-    return ((short)1000 * (short)byte) / (short)256;
+    return ((short)1000 * (short)byte) / (short)255;
 }
 
 /*

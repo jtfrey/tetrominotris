@@ -37,11 +37,10 @@ const TKeymap TKeymapDefault = {
                         TGameEngineEventReset,                  // 0x52 = 82 'R'
                         TGameEngineEventRotateClockwise,        // 0x53 = 83 'S'
                         TGameEngineEventNoOp, TGameEngineEventNoOp,
-                        TGameEngineEventHardDrop,               // 0x56 = 86 'V'
                         TGameEngineEventNoOp, TGameEngineEventNoOp, TGameEngineEventNoOp,
                         TGameEngineEventNoOp, TGameEngineEventNoOp, TGameEngineEventNoOp,
                         TGameEngineEventNoOp, TGameEngineEventNoOp, TGameEngineEventNoOp,
-                        TGameEngineEventNoOp,
+                        TGameEngineEventNoOp, TGameEngineEventNoOp,
                         TGameEngineEventRotateAntiClockwise,    // 0x61 = 97 'a'
                         TGameEngineEventNoOp, TGameEngineEventNoOp,
                         TGameEngineEventHardDrop,               // 0x64 = 100 'd'
@@ -54,9 +53,8 @@ const TKeymap TKeymapDefault = {
                         TGameEngineEventReset,                  // 0x72 = 114 'r'
                         TGameEngineEventRotateClockwise,        // 0x73 = 115 's'
                         TGameEngineEventNoOp, TGameEngineEventNoOp,
-                        TGameEngineEventSoftDrop,               // 0x76 = 118 'v'
                         TGameEngineEventNoOp, TGameEngineEventNoOp, TGameEngineEventNoOp,
-                        TGameEngineEventNoOp
+                        TGameEngineEventNoOp, TGameEngineEventNoOp
                     }
                 };
 

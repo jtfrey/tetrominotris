@@ -37,6 +37,100 @@ The heart of tetrominotris is a bit grid C pseudo-class that handles all of the 
 
 ## Color
 
-As origially written the game was black and white only.  Color requires that each position on the game board not only have the un/occupied bit, but some number of additional bits representing a color.  The traditional NES variant of Tetris used a single 4-color palette for the game pieces in each level, so going the same direction we need just 2 additional bits for color data.  The bit grid was augmented to allow for 1 to 8 distinct bit planes.  Row removal shifts data in all planes, and the rest of the operations allow for selection of one or more target bit planes.
+As origially written the game was black and white only.  Color requires that each position on the game board not only have the un/occupied bit, but some number of additional bits representing a color.  The traditional NES variant of Tetris used a single 4-color palette for the game pieces in each level, so 2 additional bits are needed for color data.  The bit grid pseudo-class was altered to allow for 1 to 8 distinct bit planes.  Row removal shifts data in all planes, and the rest of the operations allow for selection of one or more target bit planes.
 
-For black and white display, the game uses a single bit plane and the un/occupied state maps to black/white.  In color mode, the un/occupied state determines the fill style and bit planes 1 and 2 form a two-bit color index (`0b00 = 0`, `0b01 = 1`, `0b10 = 2`, `0b11 = 3`).
+The original black and white display mode uses a single bit plane and the un/occupied state also effectively maps to black/white color.  In color mode, the un/occupied state determines the empty/filled nature of a cell and bit planes 1 and 2 are a two-bit color index (`0b00 = 0`, `0b01 = 1`, `0b10 = 2`, `0b11 = 3`).  Only values 0, 1, and 2 are used by the game.
+
+The curses libary offers a limited number of colors by default (when color is supported by the terminal).  However, some terminal types allow a wider range of color support, and curses can in those cases have color indices reconfigured with arbitrary RGB values.  The curses RGB components are in the range [0,1000].  I found an NES color table with [Tetris 3-color palettes](https://kirjava.xyz/tetris-level-colours/) online and was able to extract its array of RGB values and array of color index triples for each Tetris palette (palette change is synchronized with  the level's increasing).  A function to interpolate 8-bit RGB component values from the table to curses-range values converts the colors on-the-fly.
+
+## Key mapping
+
+The game was also originally written with a fixed configuration of keys that mapped to game events.  The **a**/**A** key rotated the in-play tetromino anti-clockwise.  Inevitably *someone* out there will find my choice of keys annoying or unusable, though, so abstracting the mapping of keyboard keys to game events was a useful addition.
+
+The game will always recognize the left and right arrow keys to trigger left or right movement of the in-play tetromino.  The down arrow key will always trigger soft drop of the in-play tetromino, and the **q**/**Q** key will always exit the game.  Otherwise:
+
+- Every event must have at least one keyboard key mapped to it
+- No keyboard key can have multiple events mapped to it
+
+The game events are:
+
+- `MOVE LEFT`
+- `MOVE RIGHT`
+- `SOFT DROP`
+- `HARD DROP`
+- `ROTATE CLOCKWISE`
+- `ROTATE ANTICLOCKWISE`
+- `PAUSE`
+- `RESET`
+
+A key-mapping file declares associations between keys and events:
+
+```
+# File can have comments
+R r   = RESET
+P p   = PAUSE
+J j   = MOVE LEFT
+L l   = MOVE RIGHT
+K k   = SOFT DROP
+SPACE = HARD DROP
+A a   = ROTATE ANTICLOCKWISE
+S s   = ROTATE CLOCKWISE
+```
+
+The list of one or more keys is whitespace-delimited, with the special token `SPACE` for the spacebar.  The list is followed by an equal sign, then a single game event name.
+
+The built-in mapping is as follows:
+
+```
+R r   = RESET
+P p   = PAUSE
+, <   = MOVE LEFT
+. >    = MOVE RIGHT
+D V d v = HARD DROP
+A a   = ROTATE ANTICLOCKWISE
+S s SPACE  = ROTATE CLOCKWISE
+```
+
+A user-defined mapping file following the format described above can be passed to the program on the command line to alter gameplay.
+
+## General usage
+
+```
+$ ./tetrominotris --help
+
+usage:
+
+    ./tetrominotris {options}
+
+  options:
+
+    --help/-h                      show this information
+    --width/-w <dimension>         choose the game board width
+    --height/-h <dimension>        choose the game board height
+    --color/-C                     use a color game board
+    --basic-colors/-B              use basic curses colors rather
+                                   than attempting to use custom palettes
+    --level/-l #                   start the game at this level (0 and
+                                   up)
+    --keymap/-k <filepath>         initialize the key mapping from the
+                                   given file
+    --utf8/-U                      allow UTF-8 characters to be displayed
+
+    <dimension> = # | default | fit
+              # = a positive integer value
+        default = 10 wide or 20 high
+            fit = adjust the width to fit the terminal
+
+version: 1.0.0
+
+```
+
+The program defaults to black-and-white mode with the game board sized at the standard 10 wide by 20 high.
+
+## Screenshots
+
+What developer doesn't want to proudly post a few screenshots of his creation, after all.  The following were captured from an `xterm-256` terminal.
+
+<img src="./assets/level_1.png" width="50%" align="center"/>
+<img src="./assets/level_2.png" width="50%" align="center"/>
+<img src="./assets/game_over.png" width="50%" align="center"/>
