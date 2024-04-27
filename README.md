@@ -37,6 +37,6 @@ The heart of tetrominotris is a bit grid C pseudo-class that handles all of the 
 
 ## Color
 
-As origially written the game was black and white only.  Color requires that each position on the game board not only have the un/occupied bit, but some number of additional bits representing a color.  The traditional NES variant of Tetris used a single 4-color palette for the game pieces in each level, so going the same direction we need just 2 additional bits for color data.  The bit grid was augmented to allow for 1 to 8 distinct bit planes.  Row removal shifts data in all planes, and the rest of the operations allow for selection of one or more target bit planes.
+As originally written the game was black and white only.  Color requires that each position on the game board not only have the un/occupied bit, but some number of additional bits representing a color.  The traditional NES variant of Tetris used a single 4-color palette for the game pieces in each level, so going the same direction we need just 2 additional bits for color data.  The bit grid was augmented to allow for 1 to 8 distinct bit planes.  Row removal shifts data in all planes, and the rest of the operations allow for selection of one or more target bit planes.
 
 For black and white display, the game uses a single bit plane and the un/occupied state maps to black/white.  In color mode, the un/occupied state determines the fill style and bit planes 1 and 2 form a two-bit color index (`0b00 = 0`, `0b01 = 1`, `0b10 = 2`, `0b11 = 3`).
