@@ -4,7 +4,7 @@ Because I've shown in interest in videos about programming and emulation, YouTub
 
 <img src="./assets/TetrominoReps.png" width="480" align="center"/>
 
-The game allows the tetromino piece to be rotated 90, 180, and 270 degrees as it falls, so there are nominally 4 representations for each piece (in some cases symmetry reduces it to 2 or 1 unique representation).  But 4 x 16-bit integers is just a single 64-bit integer, so all orientations of a tetromino will fit in a 64-bit integer (call it a 64-bit word), as shows for the "T" tetromino above.  Each orientation can be extracted by means of a bitwise AND and a bit shift:
+The game allows the tetromino piece to be rotated 90, 180, and 270 degrees as it falls, so there are nominally 4 representations for each piece (in some cases symmetry reduces it to 2 or 1 unique representation).  But 4 x 16-bit integers is just a single 64-bit integer, so all orientations of a tetromino will fit in a 64-bit integer (call it a 64-bit word), as shown for the "T" tetromino above.  Each orientation can be extracted by means of a bitwise AND and a bit shift:
 
 ```
 orientation_4 = (tetromino & 0x000000000000FFFF)
