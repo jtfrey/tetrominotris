@@ -41,70 +41,6 @@
  * @const TTetrominos
  *
  * The set of all seven tetrominos in their four orientations.
- *
- *     F    C      Each orientation of the tetromino is representable as a
- *     [....]      16-bit value.  Since there are 4 orientations, each
- *     B    8      tetromino can be represented by a 64-bit value.
- *     [.XX.]
- *     7    4      The "square" tetromino has symmetry such that each
- *     [.XX.]      orientation is exactly the same:
- *     3    0 
- *     [....]          0b0000011001100000 = 0x0660
- *     
- *     F    C      The "straight" tetromino.
- *     [..X.]
- *     B    8          0b0010001000100010 = 0x2222
- *     [..X.]          0b0000000011110000 = 0x00F0
- *     7    4          0b0100010001000100 = 0x4444
- *     [..X.]          0b0000111100000000 = 0x0F00
- *     3    0
- *     [..X.]
- *     
- *     F    C      The "T" tetromino.
- *     [..X.]
- *     B    8          0b0010011000100000 = 0x2620
- *     [.XX.]          0b0000001001110000 = 0x0270
- *     7    4          0b0100011001000000 = 0x4640
- *     [..X.]          0b0000111001000000 = 0x0E40
- *     3    0
- *     [....]
- *     
- *     F    C      The first "skew" tetromino.
- *     [.X..]
- *     B    8          0b0100011000100000 = 0x4620
- *     [.XX.]          0b0000001101100000 = 0x0360
- *     7    4          0b0100011000100000 = 0x4620
- *     [..X.]          0b0000001101100000 = 0x0360
- *     3    0
- *     [....]
- *     
- *     F    C      The chiral partner "skew" tetromino.
- *     [..X.]
- *     B    8          0b0010011001000000 = 0x2640
- *     [.XX.]          0b0000011000110000 = 0x0630
- *     7    4          0b0010011001000000 = 0x2640
- *     [.X..]          0b0000011000110000 = 0x0630
- *     3    0
- *     [....]
- *     
- *     F    C      The first "L" tetromino.
- *     [.X..]
- *     B    8          0b0100010001100000 = 0x4460
- *     [.X..]          0b0000011101000000 = 0x0740
- *     7    4          0b0110001000100000 = 0x6220
- *     [.XX.]          0b0000000111100000 = 0x0170
- *     3    0
- *     [....]
- *     
- *     F    C      The chiral partner "L" tetromino.
- *     [..X.]
- *     B    8          0b0010001001100000 = 0x2260
- *     [..X.]          0b0000010001110000 = 0x0470
- *     7    4          0b0110010001000000 = 0x6440
- *     [.XX.]          0b0000011100010000 = 0x0710
- *     3    0
- *     [....]
- *     
  */
 extern const uint64_t  TTetrominos[TTetrominosCount];
 
@@ -120,7 +56,17 @@ TTetrominosExtractOrientation(
     unsigned int    orientation
 )
 {
-    return (uint16_t)((TTetrominos[tetrominoId] & (0xFFFF000000000000 >> (orientation << 4))) >> ((3 - orientation) << 4));
+    switch ( orientation % 4 ) {
+        case 0:
+            return (uint16_t)((TTetrominos[tetrominoId] & 0xFFFF000000000000) >> 48);
+        case 1:
+            return (uint16_t)((TTetrominos[tetrominoId] & 0x0000FFFF00000000) >> 32);
+        case 2:
+            return (uint16_t)((TTetrominos[tetrominoId] & 0x00000000FFFF0000) >> 16);
+        case 3:
+            return (uint16_t)(TTetrominos[tetrominoId] & 0x000000000000FFFF);
+    }
+    return 0;
 }
 
 /*
@@ -135,7 +81,17 @@ TTetrominoExtractOrientation(
     unsigned int    orientation
 )
 {
-    return (uint16_t)((tetromino & (0xFFFF000000000000 >> (orientation << 4))) >> ((3 - orientation) << 4));
+    switch ( orientation % 4 ) {
+        case 0:
+            return (uint16_t)((tetromino & 0xFFFF000000000000) >> 48);
+        case 1:
+            return (uint16_t)((tetromino & 0x0000FFFF00000000) >> 32);
+        case 2:
+            return (uint16_t)((tetromino & 0x00000000FFFF0000) >> 16);
+        case 3:
+            return (uint16_t)(tetromino & 0x000000000000FFFF);
+    }
+    return 0;
 }
 
 /*
