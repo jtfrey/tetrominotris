@@ -65,6 +65,7 @@ tui_window_free(
     tui_window_ref  the_window
 )
 {
+    werase(the_window->window_ptr);
     delwin(the_window->window_ptr);
     free((void*)the_window);
 }

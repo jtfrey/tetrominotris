@@ -24,6 +24,7 @@
 #include "TScoreboard.h"
 #include "TGameEngine.h"
 #include "TKeymap.h"
+#include "THighScores.h"
 #include "tui_window.h"
 
 #include <locale.h>
@@ -75,7 +76,7 @@ usage(
         "\n"
         "    --help/-h                      show this information\n"
         "    --width/-w <dimension>         choose the game board width\n"
-        "    --height/-h <dimension>        choose the game board height\n"
+        "    --height/-H <dimension>        choose the game board height\n"
 #ifdef ENABLE_COLOR_DISPLAY
         "    --color/-C                     use a color game board\n"
         "    --basic-colors/-B              use basic curses colors rather\n"
@@ -1123,6 +1124,242 @@ nextTetrominoDraw_COLOR(
 ////
 //
 
+static const char *THighScoresFilePath = TETROMINOTRIS_HISCORES_FILEPATH;
+static const char *THighScoresInitialsCharSet = "?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.";
+static const unsigned int THighScoresInitialsCharSetLen = 66;
+
+static inline int
+__highScoreIdxForChar(
+    char        c
+)
+{
+    int         idx = 0;
+    
+    while ( idx < THighScoresInitialsCharSetLen ) {
+        if ( THighScoresInitialsCharSet[idx] == c ) return idx;
+        idx++;
+    }
+    return -1;
+}
+
+typedef enum {
+    highScoreSelectedControlInitial0 = 0,
+    highScoreSelectedControlInitial1,
+    highScoreSelectedControlInitial2,
+    highScoreSelectedControlCancel,
+    highScoreSelectedControlSave,
+    highScoreSelectedControlMax
+} highScoreSelectedControl;
+
+typedef struct {
+    unsigned int                rank;
+    bool                        updated[highScoreSelectedControlMax + 1];
+    highScoreSelectedControl    selectedIdx;
+    unsigned int                initialIdx[3];
+    THighScoresRef              highScores;
+} THighScoreWindowContext;
+
+void
+highScoreDraw(
+    tui_window_ref  the_window,
+    WINDOW          *window_ptr,
+    const void      *context
+)
+{
+#define UPDATED ((THighScoreWindowContext*)context)->updated  
+#define SELECTEDIDX ((THighScoreWindowContext*)context)->selectedIdx  
+#define INITIALIDX ((THighScoreWindowContext*)context)->initialIdx
+#define RANK ((THighScoreWindowContext*)context)->rank
+#define HIGHSCORES ((THighScoreWindowContext*)context)->highScores
+    if ( RANK != 0xFFFFFFFF ) {
+        if ( UPDATED[highScoreSelectedControlMax] ) {
+            mvwprintw(window_ptr, 2, 2, "Congratulations, you've earned a high score!");
+            mvwprintw(window_ptr, 4, 14, "Enter your initials:");
+            UPDATED[highScoreSelectedControlMax] = false;
+        }
+        if ( UPDATED[highScoreSelectedControlInitial0] ) {
+            mvwaddch(window_ptr, 6, 18, THighScoresInitialsCharSet[INITIALIDX[highScoreSelectedControlInitial0]] | ((SELECTEDIDX == highScoreSelectedControlInitial0) ? (A_REVERSE | A_BLINK) : 0));
+            UPDATED[highScoreSelectedControlInitial0] = false;
+        }
+        if ( UPDATED[highScoreSelectedControlInitial1] ) {
+            mvwaddch(window_ptr, 6, 23, THighScoresInitialsCharSet[INITIALIDX[highScoreSelectedControlInitial1]] | ((SELECTEDIDX == highScoreSelectedControlInitial1) ? (A_REVERSE | A_BLINK) : 0));
+            UPDATED[highScoreSelectedControlInitial1] = false;
+        }
+        if ( UPDATED[highScoreSelectedControlInitial2] ) {
+            mvwaddch(window_ptr, 6, 28, THighScoresInitialsCharSet[INITIALIDX[highScoreSelectedControlInitial2]] | ((SELECTEDIDX == highScoreSelectedControlInitial2) ? (A_REVERSE | A_BLINK) : 0));
+            UPDATED[highScoreSelectedControlInitial2] = false;
+        }
+        if ( UPDATED[highScoreSelectedControlCancel] ) {
+            if ( SELECTEDIDX == highScoreSelectedControlCancel ) wattron(window_ptr, A_REVERSE);
+            mvwprintw(window_ptr, 8, 15, "CANCEL");
+            if ( SELECTEDIDX == highScoreSelectedControlCancel ) wattroff(window_ptr, A_REVERSE);
+            UPDATED[highScoreSelectedControlCancel] = false;
+        }
+        if ( UPDATED[highScoreSelectedControlSave] ) {
+            if ( SELECTEDIDX == highScoreSelectedControlSave ) wattron(window_ptr, A_REVERSE);
+            mvwprintw(window_ptr, 8, 27, " SAVE ");
+            if ( SELECTEDIDX == highScoreSelectedControlSave ) wattroff(window_ptr, A_REVERSE);
+            UPDATED[highScoreSelectedControlSave] = false;
+        }
+    } else {
+        unsigned int        i = 0, iMax = THighScoresGetCount(HIGHSCORES);
+        
+        wclear(window_ptr);
+        while ( i < iMax ) {
+            unsigned int    score;
+            char            initials[3];
+            
+            THighScoresGetRecord(HIGHSCORES, i, &score, initials);
+            mvwprintw(window_ptr, 2 + 2 * i, 14, "%u.    %c %c %c    %9u", i + 1, initials[0], initials[1], initials[2], score);
+            i++;
+        }
+        wattron(window_ptr, A_BLINK); mvwprintw(window_ptr, 8, 17, "Press any key."); wattroff(window_ptr, A_BLINK); 
+    }
+#undef UPDATED
+#undef SELECTEDIDX
+#undef INITIALIDX
+#undef RANK
+#undef HIGHSCORES
+}
+
+void
+doHighScoreWindow(
+    THighScoresRef          highScores,
+    tui_window_rect_t       bounds,
+    unsigned int            score,
+    unsigned int            rank
+)
+{
+    int                     keyCh;
+    bool                    isModal = true, shouldSave = false;
+    THighScoreWindowContext context = {
+                                .rank = rank,
+                                .updated = { true, true, true, true, true, true },
+                                .selectedIdx = highScoreSelectedControlInitial0,
+                                .initialIdx = { 0, 0, 0 },
+                                .highScores = highScores
+                            };
+    tui_window_ref  highScoreWindow = tui_window_alloc(
+                                                    bounds,
+                                                    tui_window_opts_title_align_center,
+                                                    "HIGH SCORES", 0,
+                                                    highScoreDraw, (const void*)&context);
+    tui_window_refresh(highScoreWindow, 0);
+    timeout(-1);
+    if ( rank != 0xFFFFFFFF ) {
+        // Qualified for a high score, yay!
+        while ( isModal ) {
+            keyCh = getch();
+            switch ( keyCh ) {
+                case '\t': {
+                    context.updated[context.selectedIdx] = true;
+                    context.selectedIdx = (context.selectedIdx + 1) % highScoreSelectedControlMax;
+                    context.updated[context.selectedIdx] = true;
+                    break;
+                }
+                case '\r':
+                case '\n': {
+                    context.updated[context.selectedIdx] = true;
+                    switch ( context.selectedIdx ) {
+
+                        case highScoreSelectedControlInitial0:
+                        case highScoreSelectedControlInitial1:
+                        case highScoreSelectedControlInitial2:
+                            context.updated[++context.selectedIdx] = true;
+                            break;
+                        case highScoreSelectedControlSave:
+                            shouldSave = true;
+                        case highScoreSelectedControlCancel:
+                            isModal = false;
+                            break;
+                        case highScoreSelectedControlMax:
+                            break;
+                    }
+                    break;
+                }
+                case KEY_UP: {
+                    switch ( context.selectedIdx ) {
+                        case highScoreSelectedControlInitial0:
+                        case highScoreSelectedControlInitial1:
+                        case highScoreSelectedControlInitial2:
+                            if ( context.initialIdx[context.selectedIdx] == 0 )
+                                context.initialIdx[context.selectedIdx] = THighScoresInitialsCharSetLen - 1;
+                            else
+                                context.initialIdx[context.selectedIdx] = (context.initialIdx[context.selectedIdx] - 1);
+                            context.updated[context.selectedIdx] = true;
+                            break;
+                        case highScoreSelectedControlCancel:
+                        case highScoreSelectedControlSave:
+                        case highScoreSelectedControlMax:
+                            break;
+                    }
+                    break;
+                }
+                case KEY_DOWN: {
+                    switch ( context.selectedIdx ) {
+                        case highScoreSelectedControlInitial0:
+                        case highScoreSelectedControlInitial1:
+                        case highScoreSelectedControlInitial2:
+                            context.initialIdx[context.selectedIdx] = (context.initialIdx[context.selectedIdx] + 1) % THighScoresInitialsCharSetLen;
+                            context.updated[context.selectedIdx] = true;
+                            break;
+                        case highScoreSelectedControlCancel:
+                        case highScoreSelectedControlSave:
+                        case highScoreSelectedControlMax:
+                            break;
+                    }
+                    break;
+                }
+                default: {
+                    switch ( context.selectedIdx ) {
+                        case highScoreSelectedControlInitial0:
+                        case highScoreSelectedControlInitial1:
+                        case highScoreSelectedControlInitial2: {
+                            int     idx = __highScoreIdxForChar(keyCh);
+                            if ( idx >= 0 ) {
+                                context.initialIdx[context.selectedIdx] = idx;
+                                context.updated[context.selectedIdx] = true;
+                            }
+                            break;
+                        }
+                        case highScoreSelectedControlCancel:
+                        case highScoreSelectedControlSave:
+                        case highScoreSelectedControlMax:
+                            break;
+                    }
+                    break;  
+                }
+            }
+            tui_window_refresh(highScoreWindow, 0);
+        }
+        if ( shouldSave ) {
+            char        initials[3] = {
+                                        THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial0]],
+                                        THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial1]],
+                                        THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial2]]
+                                    };
+            THighScoresRegister(highScores, score, initials);
+            THighScoresSave(highScores, THighScoresFilePath);
+        }
+        context.rank = 0xFFFFFFFF;
+    }
+    
+    // Show the high score list:
+    tui_window_refresh(highScoreWindow, 0);
+    
+    // Wait for a keypress...
+    getch();
+    
+    tui_window_free(highScoreWindow);
+    clear();
+    
+    timeout(0);
+}
+
+//
+////
+//
+
 enum {
     TWindowIndexGameBoard = 0,
     TWindowIndexStats,
@@ -1254,7 +1491,7 @@ main(
         delwin(mainWindow);
         endwin();
         refresh();
-        printf("Please resize your terminal to at least 77 columns wide and 40 columns high.\n\n");
+        printf("Please resize your terminal to at least 77 columns wide and 44 columns high.\n\n");
         exit(1);
     }
     if ( screenWidth < 97 ) {
@@ -1265,7 +1502,7 @@ main(
         delwin(mainWindow);
         endwin();
         refresh();
-        printf("Please resize your terminal to at least 40 columns high.\n\n");
+        printf("Please resize your terminal to at least 44 columns high.\n\n");
         exit(1);
     }
     if ( screenHeight < 50 ) {
@@ -1497,29 +1734,74 @@ retry_board_dims:
         if ( (keyCh == 'Q') || (keyCh == 'q') ) {
             break;
         }
-        switch ( keyCh ) {
-            case '\r':
-            case '\n':
-                gameEngineEvent = TGameEngineEventTogglePause;
-                break;
-            case KEY_DOWN:
-                gameEngineEvent = TGameEngineEventSoftDrop;
-                break;
-                gameEngineEvent = TGameEngineEventHardDrop;
-                break;
-            case KEY_LEFT:
-                gameEngineEvent = TGameEngineEventMoveLeft;
-                break;
-            case KEY_RIGHT:
-                gameEngineEvent = TGameEngineEventMoveRight;
-                break;
-            default:
-                gameEngineEvent = TKeymapEventForKey(&gameKeymap, keyCh);
-                break;
-        }
         
-        updateNotifications = TGameEngineTick(gameEngine, gameEngineEvent);
+        // Check for game over:
+        if ( gameEngine->hasEnded && ! gameEngine->didDoHighScores ) {
+            THighScoresRef      highScores = THighScoresLoad(THighScoresFilePath);
+            unsigned int        highScoreRank;
+    
+            if ( ! highScores ) highScores = THighScoresCreate();
+            if ( THighScoresDoesQualify(highScores, gameEngine->scoreboard.score, &highScoreRank) ) {
+                doHighScoreWindow(
+                        highScores,
+                        tui_window_rect_make(screenWidth / 2 - 48 / 2,
+                                             screenHeight / 2 - 10/ 2,
+                                             48,
+                                             10
+                                    ),
+                        gameEngine->scoreboard.score,
+                        highScoreRank
+                    );
+            } else {
+                doHighScoreWindow(
+                        highScores,
+                        tui_window_rect_make(screenWidth / 2 - 48 / 2,
+                                             screenHeight / 2 - 10/ 2,
+                                             48,
+                                             10
+                                    ),
+                        gameEngine->scoreboard.score,
+                        0xFFFFFFFF
+                    );
+            }
+            gameEngine->didDoHighScores = true;
+            
+            refresh();
+            if ( isGameTitleDisplayed ) {
+#ifdef ENABLE_COLOR_DISPLAY
+                if ( wantsColor ) 
+                    gameTitleDraw_COLOR(mainWindow, screenWidth);
+                else
+#endif
+                gameTitleDraw_BW(mainWindow, screenWidth);
+            }
+            for ( idx = 0; idx < TWindowIndexMax; idx++ ) if (gameWindowsEnabled & (1 << idx)) tui_window_refresh(gameWindows[idx], 1);
+            doupdate();
+            updateNotifications = 0;
+        } else {
+            switch ( keyCh ) {
+                case '\r':
+                case '\n':
+                    gameEngineEvent = TGameEngineEventTogglePause;
+                    break;
+                case KEY_DOWN:
+                    gameEngineEvent = TGameEngineEventSoftDrop;
+                    break;
+                    gameEngineEvent = TGameEngineEventHardDrop;
+                    break;
+                case KEY_LEFT:
+                    gameEngineEvent = TGameEngineEventMoveLeft;
+                    break;
+                case KEY_RIGHT:
+                    gameEngineEvent = TGameEngineEventMoveRight;
+                    break;
+                default:
+                    gameEngineEvent = TKeymapEventForKey(&gameKeymap, keyCh);
+                    break;
+            }
         
+            updateNotifications = TGameEngineTick(gameEngine, gameEngineEvent);
+        }        
         if ( updateNotifications ) {
             refresh();
             

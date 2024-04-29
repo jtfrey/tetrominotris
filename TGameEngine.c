@@ -78,7 +78,7 @@ TGameEngineReset(
     TBitGridFill(gameEngine->gameBoard, 0);
             
     //  Fill-in the rest of the game engine fields:
-    gameEngine->hasBeenStarted = gameEngine->isPaused = gameEngine->hasEnded = false;
+    gameEngine->hasBeenStarted = gameEngine->isPaused = gameEngine->hasEnded = gameEngine->didDoHighScores = false;
     gameEngine->startingPos = TGridPosMake(gameEngine->gameBoard->dimensions.w / 2, 0);
             
     // Shift two pieces into the engine, current and next:

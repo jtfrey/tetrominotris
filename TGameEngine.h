@@ -278,6 +278,7 @@ typedef struct {
     bool                hasBeenStarted;
     bool                isPaused;
     bool                hasEnded;
+    bool                didDoHighScores;
     bool                doesUseColor;
     
     // Starting level for the game(s):

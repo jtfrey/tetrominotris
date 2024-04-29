@@ -43,6 +43,11 @@
 #cmakedefine TBOARD_DEBUG
 #cmakedefine ENABLE_COLOR_DISPLAY
 
+#cmakedefine TETROMINOTRIS_HISCORES_FILEPATH "@TETROMINOTRIS_HISCORES_FILEPATH@"
+#ifndef TETROMINOTRIS_HISCORES_FILEPATH
+#   define TETROMINOTRIS_HISCORES_FILEPATH "/var/tetrominotris/hi-scores"
+#endif
+
 /*
  * @typedef TGridPos
  *

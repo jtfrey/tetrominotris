@@ -8,9 +8,15 @@ project(tetrominotris
         DESCRIPTION "A blatant ripoff of Tetris"
         LANGUAGES C
     )
+include(GNUInstallDirs)
 
 option(TBOARD_DEBUG "Enable debug printing in TBoard code" ON)
 option(ENABLE_COLOR_DISPLAY "Allow for color display." ON)
+
+if ( NOT TETROMINOTRIS_HISCORES_FILE )
+    set(TETROMINOTRIS_HISCORES_FILE "${CMAKE_INSTALL_LOCALSTATEDIR}/tetrominotris/hi-scores" CACHE FILEPATH "Location of the high scores file.")
+endif ()
+cmake_path(ABSOLUTE_PATH TETROMINOTRIS_HISCORES_FILE BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}" NORMALIZE OUTPUT_VARIABLE TETROMINOTRIS_HISCORES_FILEPATH)
 
 #
 # Locate the curses tui library:
@@ -57,14 +63,29 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 #
 # The game:
 #
-add_executable(tetrominotris TTetrominos.c TBitGrid.c TGameEngine.c TKeymap.c tui_window.c tetrominotris.c)
+add_executable(tetrominotris TTetrominos.c TBitGrid.c TGameEngine.c TKeymap.c THighScores.c tui_window.c tetrominotris.c)
 target_include_directories(tetrominotris PRIVATE ${CURSES_INCLUDE_DIRS})
 target_compile_options(tetrominotris PRIVATE ${CURSES_CFLAGS})
 target_link_libraries(tetrominotris PRIVATE ${CURSES_LIBRARIES} m)
 
 #
+# The hi-score util:
+#
+add_executable(hi-scores THighScores.c hi-scores.c)
+
+#
 # Install target(s):
 #
-include(GNUInstallDirs)
 install(TARGETS tetrominotris)
 install(FILES example-keymap.txt TYPE SYSCONF)
+cmake_path(GET TETROMINOTRIS_HISCORES_FILE PARENT_PATH TETROMINOTRIS_HISCORES_DIR)
+cmake_path(GET TETROMINOTRIS_HISCORES_FILE FILENAME TETROMINOTRIS_HISCORES_NAME)
+install(FILES assets/hi-scores
+        DESTINATION "${TETROMINOTRIS_HISCORES_DIR}"
+        RENAME "${TETROMINOTRIS_HISCORES_NAME}"
+        PERMISSIONS OWNER_READ
+        PERMISSIONS OWNER_WRITE
+        PERMISSIONS GROUP_READ
+        PERMISSIONS GROUP_WRITE
+        PERMISSIONS WORLD_READ
+        PERMISSIONS WORLD_WRITE)
