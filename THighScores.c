@@ -201,8 +201,9 @@ static const uint64_t THighScoreFileMagicBytes = 0x7273836779826983;    // "HISC
 
 typedef struct {
     uint32_t        score;
+    uint32_t        level;
+    char            timestamp[20];  // YYYY-MM-DD HH:MM:SS
     char            initials[3];
-    uint32_t        playerUid;
 } THighScore;
 
 typedef struct THighScores {
@@ -252,7 +253,7 @@ THighScoresLoad(
                         i = 0;
                         while ( i < highScores->nScores ) {
                             highScores->scores[i].score = __THighScoreHostSwapBEUInt32(highScores->scores[i].score);
-                            highScores->scores[i].playerUid = __THighScoreHostSwapBEUInt32(highScores->scores[i].playerUid);
+                            highScores->scores[i].level = __THighScoreHostSwapBEUInt32(highScores->scores[i].level);
                             i++;
                         }
                     } else {
@@ -283,13 +284,15 @@ THighScoresCreate(void)
         highScores->nScores = THIGHSCORES_COUNT;
         
         highScores->scores[0].score = 999999;
+        highScores->scores[0].level = 99;
+        strcpy(highScores->scores[0].timestamp, "1977-03-25 00:00:00");
         memcpy(highScores->scores[0].initials, "JTF", 3);
-        highScores->scores[0].playerUid = 1001;
         i = 1;
         while ( i < THIGHSCORES_COUNT ) {
             highScores->scores[i].score = 0;
+            highScores->scores[i].level = 0;
+            strcpy(highScores->scores[i].timestamp, "0000-00-00 00:00:00");
             memcpy(highScores->scores[i].initials, "???", 3);
-            highScores->scores[i].playerUid = 0;
             i++;
         }
     }
@@ -323,11 +326,16 @@ THighScoresGetRecord(
     THighScoresRef  highScores,
     unsigned int    idx,
     unsigned int    *score,
-    char            initials[3]
+    unsigned int    *level,
+    char            initials[3],
+    char            *timestamp,
+    int             timestampLen
 )
 {
     if ( idx < highScores->nScores ) {
-        *score = highScores->scores[idx].score;
+        if ( score ) *score = highScores->scores[idx].score;
+        if ( level ) *level = highScores->scores[idx].level;
+        if ( timestamp && timestampLen ) strncpy(timestamp, highScores->scores[idx].timestamp, timestampLen);
         memcpy(initials, highScores->scores[idx].initials, 3);
         return true;
     }
@@ -361,6 +369,7 @@ bool
 THighScoresRegister(
     THighScoresRef  highScores,
     unsigned int    score,
+    unsigned int    level,
     char            initials[3]
 )
 {
@@ -372,6 +381,7 @@ THighScoresRegister(
     }
     if ( i < highScores->nScores ) {
         int         j;
+        time_t      now = time(NULL);
         
         // i indicates the slot where this score goes; shift
         // i and all lower slots (minus 1) down one position
@@ -382,8 +392,9 @@ THighScoresRegister(
             j--;
         }
         highScores->scores[i].score = score;
+        highScores->scores[i].level = level;
+        strftime(highScores->scores[i].timestamp, sizeof(highScores->scores[i].timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
         memcpy(highScores->scores[i].initials, initials, 3);
-        highScores->scores[i].playerUid = getuid();
         return true;
     }
     return false;
@@ -414,7 +425,7 @@ THighScoresSave(
             highScores->nScores = __THighScoreHostSwapBEUInt32(highScores->nScores);
             while ( i < iMax ) {
                 highScores->scores[i].score = __THighScoreHostSwapBEUInt32(highScores->scores[i].score);
-                highScores->scores[i].playerUid = __THighScoreHostSwapBEUInt32(highScores->scores[i].playerUid);
+                highScores->scores[i].level = __THighScoreHostSwapBEUInt32(highScores->scores[i].level);
                 i++;
             }
         }
@@ -447,7 +458,7 @@ THighScoresSave(
             i = 0;
             while ( i < iMax ) {
                 highScores->scores[i].score = __THighScoreHostSwapBEUInt32(highScores->scores[i].score);
-                highScores->scores[i].playerUid = __THighScoreHostSwapBEUInt32(highScores->scores[i].playerUid);
+                highScores->scores[i].level = __THighScoreHostSwapBEUInt32(highScores->scores[i].level);
                 i++;
             }
         }

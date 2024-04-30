@@ -56,8 +56,10 @@ unsigned int THighScoresGetCount(THighScoresRef highScores);
  * Retrieve the score and initials for the record at index idx in the
  * highScores list.  Returns true if a record exists and *score and
  * initials were set, false otherwise.
+ *
+ * If score, level, or timestamp are NULL, that field is NOT copied.
  */
-bool THighScoresGetRecord(THighScoresRef highScores, unsigned int idx, unsigned int *score, char initials[3]);
+bool THighScoresGetRecord(THighScoresRef highScores, unsigned int idx, unsigned int *score, unsigned int *level, char initials[3], char *timestamp, int timestampLen);
 
 /*
  * @function THighScoresDoesQualify
@@ -75,7 +77,7 @@ bool THighScoresDoesQualify(THighScoresRef highScores, unsigned int score, unsig
  * provided three-character initials will be logged to the list.
  */
 bool
-THighScoresRegister(THighScoresRef highScores, unsigned int score, char initials[3]);
+THighScoresRegister(THighScoresRef highScores, unsigned int score, unsigned int level, char initials[3]);
 
 /*
  * @function THighScoresSave

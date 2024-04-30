@@ -1206,11 +1206,11 @@ highScoreDraw(
         
         wclear(window_ptr);
         while ( i < iMax ) {
-            unsigned int    score;
+            unsigned int    score, level;
             char            initials[3];
             
-            THighScoresGetRecord(HIGHSCORES, i, &score, initials);
-            mvwprintw(window_ptr, 2 + 2 * i, 14, "%u.    %c %c %c    %9u", i + 1, initials[0], initials[1], initials[2], score);
+            THighScoresGetRecord(HIGHSCORES, i, &score, &level, initials, NULL, 0);
+            mvwprintw(window_ptr, 2 + 2 * i, 8, "%u.    %c %c %c    %9u (Lv %2u)", i + 1, initials[0], initials[1], initials[2], score, level);
             i++;
         }
         wattron(window_ptr, A_BLINK); mvwprintw(window_ptr, 8, 17, "Press any key."); wattroff(window_ptr, A_BLINK); 
@@ -1227,6 +1227,7 @@ doHighScoreWindow(
     THighScoresRef          highScores,
     tui_window_rect_t       bounds,
     unsigned int            score,
+    unsigned int            level,
     unsigned int            rank
 )
 {
@@ -1338,7 +1339,7 @@ doHighScoreWindow(
                                         THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial1]],
                                         THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial2]]
                                     };
-            THighScoresRegister(highScores, score, initials);
+            THighScoresRegister(highScores, score, level, initials);
             THighScoresSave(highScores, THighScoresFilePath);
         }
         context.rank = 0xFFFFFFFF;
@@ -1750,6 +1751,7 @@ retry_board_dims:
                                              10
                                     ),
                         gameEngine->scoreboard.score,
+                        gameEngine->scoreboard.level,
                         highScoreRank
                     );
             } else {
@@ -1761,6 +1763,7 @@ retry_board_dims:
                                              10
                                     ),
                         gameEngine->scoreboard.score,
+                        gameEngine->scoreboard.level,
                         0xFFFFFFFF
                     );
             }
