@@ -101,9 +101,7 @@ The program can be configured at build with a singular path at which a high scor
 $ cmake … -DTETROMINOTRIS_HISCORES_FILE=/var/lib/tetrominotris/hi-scores …
 ```
 
-Three records are retained, each consisting of the score, the level reached, the initials chosen by the player, and a timestamp.  (In early commits it retained the Unix uid number so that on shared systems anyone using naughty initials could be identified, but then I realized after entering 'Poo' that I'd only be catching myself.)  If the user has write privilges on the parent directory of the file, then removing the file will allow it to be regenerated on the next game play.
-
-There are effectively only two spots for which players can vie because the top-ranked game always belongs to JTF.
+Three records are retained, each consisting of the score; the level reached; stats on number of lines completed of each type and number of tetrominos of each type; the initials chosen by the player; and a timestamp.  (In early commits it retained the Unix uid number so that on shared systems anyone using naughty initials could be identified, but then I realized after entering 'Poo' that I'd only be catching myself.)  If the user has write privilges on the parent directory of the file, then removing the file will allow it to be regenerated on the next game play.
 
 ## General usage
 

@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Minor optimization:  checks for completed rows are now confined to rows covered by the placed tetromino, not the entire board
+- Additional stats added to high scores file
+    - Number of lines completed of each type
+    - Number of tetrominos of each type placed
 
 
 ## [1.1.0] - 2024-04-29
