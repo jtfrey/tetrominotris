@@ -93,6 +93,18 @@ S s SPACE  = ROTATE CLOCKWISE
 
 A user-defined mapping file following the format described above can be passed to the program on the command line to alter gameplay.
 
+## High Scores
+
+The program can be configured at build with a singular path at which a high score file should be kept.  The `TETROMINOTRIS_HISCORES_FILE` CMake variable can be set to the desired path to the file.
+
+```
+$ cmake … -DTETROMINOTRIS_HISCORES_FILE=/var/lib/tetrominotris/hi-scores …
+```
+
+Three records are retained, each consisting of the score, the level reached, the initials chosen by the player, and a timestamp.  (In early commits it retained the Unix uid number so that on shared systems anyone using naughty initials could be identified, but then I realized after entering 'Poo' that I'd only be catching myself.)  If the user has write privilges on the parent directory of the file, then removing the file will allow it to be regenerated on the next game play.
+
+There are effectively only two spots for which players can vie because the top-ranked game always belongs to JTF.
+
 ## General usage
 
 ```
@@ -100,13 +112,15 @@ $ ./tetrominotris --help
 
 usage:
 
-    ./tetrominotris {options}
+    build/tetrominotris {options}
 
   options:
 
     --help/-h                      show this information
+    --word-size/-S <word-size>     choose the word size used by the game
+                                   engine's bit grid (default: opt)
     --width/-w <dimension>         choose the game board width
-    --height/-h <dimension>        choose the game board height
+    --height/-H <dimension>        choose the game board height
     --color/-C                     use a color game board
     --basic-colors/-B              use basic curses colors rather
                                    than attempting to use custom palettes
@@ -119,9 +133,13 @@ usage:
     <dimension> = # | default | fit
               # = a positive integer value
         default = 10 wide or 20 high
-            fit = adjust the width to fit the terminal
+            fit = adjust to fit the terminal
 
-version: 1.0.0
+    <word-size> = opt | 8b | 16b | 32b | 64b
+            opt = whichever bit size minimizes wasted bits and maximizes
+                  bits-per-word
+
+version: 1.1.1
 
 ```
 

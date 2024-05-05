@@ -34,7 +34,7 @@ __TBitGridIteratorNext_8b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         if ( iterator->isStarted ) {
             iterator->i++;
             if ( iterator->i >= iterator->dimensions.w ) {
@@ -42,7 +42,7 @@ __TBitGridIteratorNext_8b_1C(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 
                 iterator->grid[ITERATOR->channelIdx].b8++;
             } else if ( (iterator->i % 8) == 0 ) {
@@ -67,12 +67,12 @@ __TBitGridIteratorNextFullRow_8b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -113,7 +113,7 @@ __TBitGridIteratorNext_8b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
@@ -124,7 +124,7 @@ __TBitGridIteratorNext_8b_NC(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 incPtrs = true;
             } else {
                 incPtrs = ( (iterator->i % 8) == 0 );
@@ -166,12 +166,12 @@ __TBitGridIteratorNextFullRow_8b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords, channelIdx, channelMask;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -244,7 +244,7 @@ __TBitGridIteratorNext_16b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         if ( iterator->isStarted ) {
             iterator->i++;
             if ( iterator->i >= iterator->dimensions.w ) {
@@ -252,7 +252,7 @@ __TBitGridIteratorNext_16b_1C(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 
                 iterator->grid[ITERATOR->channelIdx].b16++;
             } else if ( (iterator->i % 16) == 0 ) {
@@ -277,12 +277,12 @@ __TBitGridIteratorNextFullRow_16b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -323,7 +323,7 @@ __TBitGridIteratorNext_16b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
@@ -334,7 +334,7 @@ __TBitGridIteratorNext_16b_NC(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 incPtrs = true;
             } else {
                 incPtrs = ( (iterator->i % 16) == 0 );
@@ -376,12 +376,12 @@ __TBitGridIteratorNextFullRow_16b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords, channelIdx, channelMask;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -454,7 +454,7 @@ __TBitGridIteratorNext_32b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         if ( iterator->isStarted ) {
             iterator->i++;
             if ( iterator->i >= iterator->dimensions.w ) {
@@ -462,7 +462,7 @@ __TBitGridIteratorNext_32b_1C(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 
                 iterator->grid[ITERATOR->channelIdx].b32++;
             } else if ( (iterator->i % 32) == 0 ) {
@@ -487,12 +487,12 @@ __TBitGridIteratorNextFullRow_32b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -533,7 +533,7 @@ __TBitGridIteratorNext_32b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
@@ -544,7 +544,7 @@ __TBitGridIteratorNext_32b_NC(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 incPtrs = true;
             } else {
                 incPtrs = ( (iterator->i % 32) == 0 );
@@ -586,12 +586,12 @@ __TBitGridIteratorNextFullRow_32b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords, channelIdx, channelMask;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -664,7 +664,7 @@ __TBitGridIteratorNext_64b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         if ( iterator->isStarted ) {
             iterator->i++;
             if ( iterator->i >= iterator->dimensions.w ) {
@@ -672,7 +672,7 @@ __TBitGridIteratorNext_64b_1C(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 
                 iterator->grid[ITERATOR->channelIdx].b64++;
             } else if ( (iterator->i % 64) == 0 ) {
@@ -697,12 +697,12 @@ __TBitGridIteratorNextFullRow_64b_1C(
 {
 #define ITERATOR    ((TBitGridIterator_1C*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -743,7 +743,7 @@ __TBitGridIteratorNext_64b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    if ( iterator->j < iterator->dimensions.h ) {
+    if ( iterator->j < iterator->jMax ) {
         TCell       channelMask, channelIdx, localValue;
         bool        incPtrs = false;
         
@@ -754,7 +754,7 @@ __TBitGridIteratorNext_64b_NC(
                 iterator->j++;
                 
                 //  We just incremented out of our grid dimensions, all done!
-                if ( iterator->j >= iterator->dimensions.h ) return false;
+                if ( iterator->j >= iterator->jMax ) return false;
                 incPtrs = true;
             } else {
                 incPtrs = ( (iterator->i % 64) == 0 );
@@ -796,12 +796,12 @@ __TBitGridIteratorNextFullRow_64b_NC(
 {
 #define ITERATOR    ((TBitGridIterator_NC*)iterator)
 
-    while ( iterator->j < iterator->dimensions.h ) {
+    while ( iterator->j < iterator->jMax ) {
         unsigned int    nFullWords, channelIdx, channelMask;
         
         if ( iterator->isStarted ) {
             //  Did we increment out of our grid dimensions?
-            if ( ++iterator->j >= iterator->dimensions.h ) return false;
+            if ( ++iterator->j >= iterator->jMax ) return false;
         } else {
             iterator->isStarted = true;
         }
@@ -2279,10 +2279,117 @@ TBitGridIteratorCreate(
         if ( iterator ) {
             iterator->dimensions = bitGrid->dimensions;
             iterator->i = iterator->j = 0;
+            iterator->jMax = bitGrid->dimensions.h;
             iterator->nFullWords = bitGrid->dimensions.w / bitGrid->dimensions.nBitsPerWord;
             iterator->nPartialBits = bitGrid->dimensions.w % bitGrid->dimensions.nBitsPerWord;
             iterator->isStarted = false;
             memcpy(iterator->grid, bitGrid->grid, gridBytes);
+        }
+    }
+    return iterator;
+}
+
+//
+
+TBitGridIterator*
+TBitGridIteratorCreateWithRowRange(
+    TBitGrid        *bitGrid,
+    TCell           channelMask,
+    unsigned int    startRow,
+    unsigned int    endRow
+)
+{
+    size_t              gridBytes = bitGrid->dimensions.nChannels * sizeof(TBitGridChannelPtr);
+    TBitGridIterator    *iterator = NULL;
+    unsigned int        nChannelsEnabled = 0;
+    TCell               channelMaskCopy;
+    uint16_t            validChannelsMask = (1 << bitGrid->dimensions.nChannels) - 1;
+    
+    channelMask &= validChannelsMask;
+    channelMaskCopy = channelMask;
+    
+    if ( channelMask == 0 ) return NULL;
+    
+    if ( endRow >= bitGrid->dimensions.h ) endRow = bitGrid->dimensions.h - 1;
+    if ( startRow > endRow ) startRow = endRow;
+    
+    while ( channelMask ) {
+        if ( channelMask & 0x1 ) nChannelsEnabled++;
+        channelMask >>= 1;
+    }
+    if ( nChannelsEnabled ) {
+        if ( nChannelsEnabled == 1 ) {
+            TBitGridIterator_1C *ITERATOR = (TBitGridIterator_1C*)malloc(sizeof(TBitGridIterator_1C) + gridBytes);
+            
+            if ( ITERATOR ) {
+                ITERATOR->base.grid = (void*)ITERATOR + sizeof(TBitGridIterator_1C);
+                channelMask = 0;
+                while ( (1 << channelMask) != channelMaskCopy ) channelMask++;
+                ITERATOR->channelIdx = channelMask;
+                iterator = (TBitGridIterator*)ITERATOR;
+                switch ( bitGrid->dimensions.nBitsPerWord ) {
+                    case 8:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_8b_1C;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_8b_1C;
+                        break;
+                    case 16:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_16b_1C;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_16b_1C;
+                        break;
+                    case 32:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_32b_1C;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_32b_1C;
+                        break;
+                    case 64:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_64b_1C;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_64b_1C;
+                        break;
+                }
+            }
+        } else {
+            TBitGridIterator_NC *ITERATOR = (TBitGridIterator_NC*)malloc(sizeof(TBitGridIterator_NC) + gridBytes);
+            
+            if ( ITERATOR ) {
+                ITERATOR->base.grid = (void*)ITERATOR + sizeof(TBitGridIterator_NC);
+                ITERATOR->channelMask = channelMaskCopy;
+                iterator = (TBitGridIterator*)ITERATOR;
+                switch ( bitGrid->dimensions.nBitsPerWord ) {
+                    case 8:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_8b_NC;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_8b_NC;
+                        break;
+                    case 16:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_16b_NC;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_16b_NC;
+                        break;
+                    case 32:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_32b_NC;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_32b_NC;
+                        break;
+                    case 64:
+                        iterator->callbacks.nextFn = __TBitGridIteratorNext_64b_NC;
+                        iterator->callbacks.nextFullRowFn = __TBitGridIteratorNextFullRow_64b_NC;
+                        break;
+                }
+            }
+        }
+        if ( iterator ) {
+            iterator->dimensions = bitGrid->dimensions;
+            iterator->i = 0;
+            iterator->j = startRow;
+            iterator->jMax = endRow + 1;
+            iterator->nFullWords = bitGrid->dimensions.w / bitGrid->dimensions.nBitsPerWord;
+            iterator->nPartialBits = bitGrid->dimensions.w % bitGrid->dimensions.nBitsPerWord;
+            iterator->isStarted = false;
+            memcpy(iterator->grid, bitGrid->grid, gridBytes);
+            
+            // Fast-forward to starting row:
+            if ( startRow > 0 ) {
+                unsigned int    channel = 0;
+                
+                while ( channel < bitGrid->dimensions.nChannels )
+                    iterator->grid[channel++].b8 += startRow * bitGrid->dimensions.nWordsPerRow * bitGrid->dimensions.nBytesPerWord;
+            }
         }
     }
     return iterator;

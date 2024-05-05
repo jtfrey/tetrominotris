@@ -11,6 +11,21 @@
 #define __THIGHSCORES_H__
 
 #include "tetrominotris_config.h"
+#include "TScoreboard.h"
+
+/*
+ * @typedef THighScoreRecord
+ *
+ * Data associated with a high score.
+ */
+typedef struct {
+    char            initials[3];
+    unsigned int    score;
+    unsigned int    level;
+    unsigned int    tetrominosOfType[TTetrominosCount];
+    unsigned int    nLinesOfType[TScoreboardLineCountTypeListLength];
+    char            timestamp[20];  // YYYY-MM-DD HH:MM:SS
+} THighScoreRecord;
 
 /*
  * @typedef THighScoresRef
@@ -59,7 +74,7 @@ unsigned int THighScoresGetCount(THighScoresRef highScores);
  *
  * If score, level, or timestamp are NULL, that field is NOT copied.
  */
-bool THighScoresGetRecord(THighScoresRef highScores, unsigned int idx, unsigned int *score, unsigned int *level, char initials[3], char *timestamp, int timestampLen);
+bool THighScoresGetRecord(THighScoresRef highScores, unsigned int idx, THighScoreRecord *theRecord);
 
 /*
  * @function THighScoresDoesQualify
@@ -77,8 +92,7 @@ bool THighScoresDoesQualify(THighScoresRef highScores, unsigned int score, unsig
  * provided three-character initials will be logged to the list.
  */
 bool
-THighScoresRegister(THighScoresRef highScores, unsigned int score, unsigned int level, char initials[3]);
-
+THighScoresRegister(THighScoresRef highScores, THighScoreRecord *theNewRecord);
 /*
  * @function THighScoresSave
  *

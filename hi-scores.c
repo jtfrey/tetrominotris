@@ -81,12 +81,14 @@ main(
                 }
                 iMax = THighScoresGetCount(highScores);
                 while ( i < iMax ) {
-                    unsigned int    score, level;
-                    char            initials[3], timestamp[24];
+                    THighScoreRecord    r;
         
-                    if ( THighScoresGetRecord(highScores, i++, &score, &level, initials, timestamp, sizeof(timestamp)) ) {
+                    if ( THighScoresGetRecord(highScores, i++, &r) ) {
                         printf("%2u.    %c %c %c      %8u (Lv %2u)  %s\n",
-                            i, initials[0], initials[1], initials[2], score, level, timestamp);
+                            i, r.initials[0], r.initials[1], r.initials[2], 
+                            r.score, r.level, r.timestamp);
+                        printf("                  lines of type 1/2/3/4: %u/%u/%u/%u\n",
+                            r.nLinesOfType[0], r.nLinesOfType[1], r.nLinesOfType[2], r.nLinesOfType[3]);
                     }
                 }
                 THighScoresDestroy(highScores);

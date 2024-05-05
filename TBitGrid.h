@@ -481,7 +481,7 @@ typedef bool (*TBitGridIteratorNextFullRowFn)(struct TBitGridIterator *iterator,
  */
 typedef struct TBitGridIterator {
     TBitGridDimensions                  dimensions;
-    unsigned int                        i, j;
+    unsigned int                        i, j, jMax;
     unsigned int                        nFullWords, nPartialBits;
     bool                                isStarted;
     TBitGridStorage                     grid;
@@ -502,6 +502,18 @@ typedef struct TBitGridIterator {
  * passing it to TBitGridIteratorDestroy().
  */
 TBitGridIterator* TBitGridIteratorCreate(TBitGrid *bitGrid, TCell channelMask);
+
+/*
+ * @function TBitGridIteratorCreateWithRowRange
+ *
+ * Allocate a new TBitGridIterator that will enumerate (in the forward direction)
+ * the cells in bitGrid.  Only the bit values in the channels selected bt channelMask
+ * will be enumerated and only for the rows in the given range.
+ *
+ * The consumer is responsible for eventually deallocating the returned iterator by
+ * passing it to TBitGridIteratorDestroy().
+ */
+TBitGridIterator* TBitGridIteratorCreateWithRowRange(TBitGrid *bitGrid, TCell channelMask, unsigned int startRow, unsigned int endRow);
 
 /*
  * @function TBitGridIteratorDestroy

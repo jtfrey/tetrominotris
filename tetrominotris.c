@@ -36,15 +36,16 @@
 
 static struct option cliArgOpts[] = {
     { "help",           no_argument,        NULL,       'h' },
+    { "word-size",      required_argument,  NULL,       'S' },
     { "width",          required_argument,  NULL,       'w' },
     { "height",         required_argument,  NULL,       'H' },
     { "level",          required_argument,  NULL,       'l' },
     { "keymap",         required_argument,  NULL,       'k' },
+    { "utf8",           no_argument,        NULL,       'U' },
 #ifdef ENABLE_COLOR_DISPLAY
     { "color",          no_argument,        NULL,       'C' },
     { "basic-colors",   no_argument,        NULL,       'B' },
 #endif
-    { "utf8",           no_argument,        NULL,       'U' },
     { NULL,             0,                  NULL,        0  }
 };
 
@@ -52,14 +53,11 @@ static struct option cliArgOpts[] = {
  * options are concatenated with the common options -- so don't end the next
  * line with a semicolon!
  */
-static const char *cliArgOptsStr = "hw:H:l:k:U"
+static const char *cliArgOptsStr = "hS:w:H:l:k:U"
 #ifdef ENABLE_COLOR_DISPLAY
             "CB"
 #endif
             ;
-
-
-//
 
 void
 usage(
@@ -75,6 +73,8 @@ usage(
         "  options:\n"
         "\n"
         "    --help/-h                      show this information\n"
+        "    --word-size/-S <word-size>     choose the word size used by the game\n"
+        "                                   engine's bit grid (default: opt)\n"
         "    --width/-w <dimension>         choose the game board width\n"
         "    --height/-H <dimension>        choose the game board height\n"
 #ifdef ENABLE_COLOR_DISPLAY
@@ -91,12 +91,55 @@ usage(
         "    <dimension> = # | default | fit\n"
         "              # = a positive integer value\n"
         "        default = 10 wide or 20 high\n"
-        "            fit = adjust the width to fit the terminal\n"
+        "            fit = adjust to fit the terminal\n"
+        "\n"
+        "    <word-size> = opt | 8b | 16b | 32b | 64b\n"
+        "            opt = whichever bit size minimizes wasted bits and maximizes\n"
+        "                  bits-per-word\n"
         "\n"
         "version: " TETROMINOTRIS_VERSION "\n"
         "\n",
         exe
     );
+}
+
+/*
+ * @function parseWordSize
+ *
+ * Parse a word size from the command line.  Returns true is
+ * the string was parsed successfully and *wordSize is set
+ * to the desired value.
+ *
+ * Returns false on error and does not modify *wordSize.
+ */
+bool
+parseWordSize(
+    const char          *optstr,
+    TBitGridWordSize    *wordSize
+)
+{
+    if ( ! strcasecmp(optstr, "opt") ) {
+        *wordSize = TBitGridWordSizeDefault;
+        return true;
+    }
+    if ( ! strcasecmp(optstr, "8b") ) {
+        *wordSize = TBitGridWordSizeForce8Bit;
+        return true;
+    }
+    if ( ! strcasecmp(optstr, "16b") ) {
+        *wordSize = TBitGridWordSizeForce16Bit;
+        return true;
+    }
+    if ( ! strcasecmp(optstr, "32b") ) {
+        *wordSize = TBitGridWordSizeForce32Bit;
+        return true;
+    }
+    if ( ! strcasecmp(optstr, "64b") ) {
+        *wordSize = TBitGridWordSizeForce64Bit;
+        return true;
+    }
+    fprintf(stdout, "ERROR:  invalid word size provided: %s\n", optstr);
+    return false;
 }
 
 /*
@@ -1206,11 +1249,10 @@ highScoreDraw(
         
         wclear(window_ptr);
         while ( i < iMax ) {
-            unsigned int    score, level;
-            char            initials[3];
+            THighScoreRecord    r;
             
-            THighScoresGetRecord(HIGHSCORES, i, &score, &level, initials, NULL, 0);
-            mvwprintw(window_ptr, 2 + 2 * i, 8, "%u.    %c %c %c    %9u (Lv %2u)", i + 1, initials[0], initials[1], initials[2], score, level);
+            THighScoresGetRecord(HIGHSCORES, i, &r);
+            mvwprintw(window_ptr, 2 + 2 * i, 8, "%u.    %c %c %c    %9u (Lv %2u)", i + 1, r.initials[0], r.initials[1], r.initials[2], r.score, r.level);
             i++;
         }
         wattron(window_ptr, A_BLINK); mvwprintw(window_ptr, 8, 17, "Press any key."); wattroff(window_ptr, A_BLINK); 
@@ -1226,8 +1268,7 @@ void
 doHighScoreWindow(
     THighScoresRef          highScores,
     tui_window_rect_t       bounds,
-    unsigned int            score,
-    unsigned int            level,
+    TScoreboard             *scoreboard,
     unsigned int            rank
 )
 {
@@ -1334,12 +1375,18 @@ doHighScoreWindow(
             tui_window_refresh(highScoreWindow, 0);
         }
         if ( shouldSave ) {
-            char        initials[3] = {
-                                        THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial0]],
-                                        THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial1]],
-                                        THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial2]]
-                                    };
-            THighScoresRegister(highScores, score, level, initials);
+            THighScoreRecord    r = {
+                                    .initials = {
+                                            THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial0]],
+                                            THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial1]],
+                                            THighScoresInitialsCharSet[context.initialIdx[highScoreSelectedControlInitial2]]
+                                        },
+                                    .score = scoreboard->score,
+                                    .level = scoreboard->level
+                                };
+            memcpy(r.tetrominosOfType, scoreboard->tetrominosOfType, sizeof(r.tetrominosOfType));
+            memcpy(r.nLinesOfType, scoreboard->nLinesOfType, sizeof(r.nLinesOfType));
+            THighScoresRegister(highScores, &r);
             THighScoresSave(highScores, THighScoresFilePath);
         }
         context.rank = 0xFFFFFFFF;
@@ -1391,6 +1438,7 @@ main(
     int                 wantGameBoardWidth = 10, wantGameBoardHeight = 20;
     unsigned int        gameWindowsEnabled = 0;
     bool                haveRetriedWidth = false, haveRetriedHeight = false, doDimensionRetry = false;
+    TBitGridWordSize    wantWordSize = TBitGridWordSizeDefault;
 
 #ifdef ENABLE_COLOR_DISPLAY
     bool                wantsColor = false;
@@ -1411,6 +1459,10 @@ main(
             case 'h':
                 usage(argv[0]);
                 exit(0);
+            
+            case 'S':
+                if ( ! parseWordSize(optarg, &wantWordSize) ) exit(EINVAL);
+                break;
             
             case 'w':
                 if ( ! parseWidth(optarg, &wantGameBoardWidth) ) exit(EINVAL);
@@ -1592,11 +1644,11 @@ retry_board_dims:
 
 #ifdef ENABLE_COLOR_DISPLAY
     if ( wantsColor )
-        gameEngine = TGameEngineCreate(3, gameBoardWidth, gameBoardHeight, startingLevel);
+        gameEngine = TGameEngineCreate(wantWordSize, 3, gameBoardWidth, gameBoardHeight, startingLevel);
     else
 #endif
     // Create the game engine:
-    gameEngine = TGameEngineCreate(1, gameBoardWidth, gameBoardHeight, startingLevel);
+    gameEngine = TGameEngineCreate(wantWordSize, 1, gameBoardWidth, gameBoardHeight, startingLevel);
     
     //
     // Initialize game windows:
@@ -1750,8 +1802,7 @@ retry_board_dims:
                                              48,
                                              10
                                     ),
-                        gameEngine->scoreboard.score,
-                        gameEngine->scoreboard.level,
+                        &gameEngine->scoreboard,
                         highScoreRank
                     );
             } else {
@@ -1762,8 +1813,7 @@ retry_board_dims:
                                              48,
                                              10
                                     ),
-                        gameEngine->scoreboard.score,
-                        gameEngine->scoreboard.level,
+                        &gameEngine->scoreboard,
                         0xFFFFFFFF
                     );
             }

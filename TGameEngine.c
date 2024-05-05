@@ -18,14 +18,15 @@ enum {
 
 TGameEngine*
 TGameEngineCreate(
-    bool            useColor,
-    unsigned int    w,
-    unsigned int    h,
-    unsigned int    startingLevel
+    TBitGridWordSize    wordSize, 
+    bool                useColor,
+    unsigned int        w,
+    unsigned int        h,
+    unsigned int        startingLevel
 )
 {
     TGameEngine     *newEngine = NULL;
-    TBitGrid        *gameBoard = TBitGridCreate(TBitGridWordSizeForce16Bit, useColor ? 3 : 1, w, h);
+    TBitGrid        *gameBoard = TBitGridCreate(wordSize, useColor ? 3 : 1, w, h);
     
     if ( gameBoard ) {
         newEngine = (TGameEngine*)malloc(sizeof(TGameEngine));    
@@ -129,7 +130,17 @@ TGameEngineCheckForCompleteRows(
     TGameEngine     *gameEngine
 )
 {
-    TBitGridIterator    *iterator = TBitGridIteratorCreate(gameEngine->gameBoard, TGameEngineBitGridChannelIsOccupied);
+    TGameEngineCheckForCompleteRowsInRange(gameEngine, 0, gameEngine->gameBoard->dimensions.h - 1);
+}
+
+void
+TGameEngineCheckForCompleteRowsInRange(
+    TGameEngine     *gameEngine,
+    unsigned int    startRow,
+    unsigned int    endRow
+)
+{
+    TBitGridIterator    *iterator = TBitGridIteratorCreateWithRowRange(gameEngine->gameBoard, TGameEngineBitGridChannelIsOccupied, startRow, endRow);
     unsigned int        startFullRow = -1, nRow = 0, currentRow;
     bool                didClearRows = false;
     unsigned int        curLevel = gameEngine->scoreboard.level;
@@ -321,7 +332,7 @@ TGameEngineTick(
                     TBitGridSet4x4AtPosition(gameEngine->gameBoard, 1, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x1) ? piece4x4 : 0x0000);
                     TBitGridSet4x4AtPosition(gameEngine->gameBoard, 2, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x2) ? piece4x4 : 0x0000);
                 }
-                TGameEngineCheckForCompleteRows(gameEngine);
+                TGameEngineCheckForCompleteRowsInRange(gameEngine, gameEngine->currentSprite.P.j, gameEngine->currentSprite.P.j + 3);
                 gameEngine->scoreboard.score += gameEngine->extraPoints;
                 gameEngine->extraPoints = 0;
                 gameEngine->isInSoftDrop = false;

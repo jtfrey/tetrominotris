@@ -327,7 +327,7 @@ typedef struct {
  * All elements of the engine are initialized to their starting values.  The
  * startingLevel must be between 0 and 9 (per the original game).
  */
-TGameEngine* TGameEngineCreate(bool useColor, unsigned int w, unsigned int h, unsigned int startingLevel);
+TGameEngine* TGameEngineCreate(TBitGridWordSize wordSize, bool useColor, unsigned int w, unsigned int h, unsigned int startingLevel);
 
 /*
  * @function TGameEngineReset
@@ -353,6 +353,20 @@ void TGameEngineChooseNextPiece(TGameEngine *gameEngine);
  * update the line type stats; and update the score.
  */
 void TGameEngineCheckForCompleteRows(TGameEngine *gameEngine);
+
+/*
+ * @function TGameEngineCheckForCompleteRowsInRange
+ *
+ * Check for any ranges of completed rows between the startRow and endRow,
+ * inclusive; remove them from the game board and update the line type stats;
+ * and update the score.
+ *
+ * The original code checked the entire game board for completed rows, but
+ * a single tetromino can only ever complete the 1 to 4 rows in which is has
+ * settled.  So it's more optimal to just check the 4 rows the tetromino
+ * sprite occupies.
+ */
+void TGameEngineCheckForCompleteRowsInRange(TGameEngine *gameEngine, unsigned int startRow, unsigned int endRow);
 
 /*
  * @function TGameEngineTick

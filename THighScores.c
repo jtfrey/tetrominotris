@@ -199,17 +199,10 @@ typedef struct THighScores * THighScoresRef;
 
 static const uint64_t THighScoreFileMagicBytes = 0x7273836779826983;    // "HISCORES"
 
-typedef struct {
-    uint32_t        score;
-    uint32_t        level;
-    char            timestamp[20];  // YYYY-MM-DD HH:MM:SS
-    char            initials[3];
-} THighScore;
-
 typedef struct THighScores {
-    uint64_t        magic;
-    uint32_t        nScores;
-    THighScore      scores[0];
+    uint64_t            magic;
+    uint32_t            nScores;
+    THighScoreRecord    records[0];
 } THighScores;
 
 //
@@ -245,15 +238,19 @@ THighScoresLoad(
                         inB += 4; outB += 3;
                     }
                     if ( inB >= endB ) {
-                        int         i;
+                        int         i, j;
                         
                         highScores = (THighScores*)readBuffer;
                         highScores->magic = __THighScoreHostSwapBEUInt64(highScores->magic);
                         highScores->nScores = __THighScoreHostSwapBEUInt32(highScores->nScores);
                         i = 0;
                         while ( i < highScores->nScores ) {
-                            highScores->scores[i].score = __THighScoreHostSwapBEUInt32(highScores->scores[i].score);
-                            highScores->scores[i].level = __THighScoreHostSwapBEUInt32(highScores->scores[i].level);
+                            highScores->records[i].score = __THighScoreHostSwapBEUInt32(highScores->records[i].score);
+                            highScores->records[i].level = __THighScoreHostSwapBEUInt32(highScores->records[i].level);
+                            for ( j = 0; j < TTetrominosCount ; j++ )
+                                highScores->records[i].tetrominosOfType[j] = __THighScoreHostSwapBEUInt32(highScores->records[i].tetrominosOfType[j]);
+                            for ( j = 0; j < TScoreboardLineCountTypeListLength ; j++ )
+                                highScores->records[i].nLinesOfType[j] = __THighScoreHostSwapBEUInt32(highScores->records[i].nLinesOfType[j]);
                             i++;
                         }
                     } else {
@@ -275,24 +272,33 @@ THighScoresRef
 THighScoresCreate(void)
 {
     THighScores     *highScores = (THighScores*)malloc(sizeof(THighScores) + 
-                                            THIGHSCORES_COUNT * sizeof(THighScore));
+                                            THIGHSCORES_COUNT * sizeof(THighScoreRecord));
     
     if ( highScores ) {
-        int         i;
+        int         i, j;
         
         highScores->magic = THighScoreFileMagicBytes;
         highScores->nScores = THIGHSCORES_COUNT;
         
-        highScores->scores[0].score = 999999;
-        highScores->scores[0].level = 99;
-        strcpy(highScores->scores[0].timestamp, "1977-03-25 00:00:00");
-        memcpy(highScores->scores[0].initials, "JTF", 3);
+        highScores->records[0].score = 24000;
+        highScores->records[0].level = 9;
+        strcpy(highScores->records[0].timestamp, "1977-03-25 00:00:00");
+        memcpy(highScores->records[0].initials, "JTF", 3);
+        for ( j = 0; j < TTetrominosCount ; j++ )
+            highScores->records[i].tetrominosOfType[j] = 99;
+        for ( j = 0; j < TScoreboardLineCountTypeListLength ; j++ )
+            highScores->records[i].nLinesOfType[j] = 99;
+                
         i = 1;
         while ( i < THIGHSCORES_COUNT ) {
-            highScores->scores[i].score = 0;
-            highScores->scores[i].level = 0;
-            strcpy(highScores->scores[i].timestamp, "0000-00-00 00:00:00");
-            memcpy(highScores->scores[i].initials, "???", 3);
+            highScores->records[i].score = 0;
+            highScores->records[i].level = 0;
+            strcpy(highScores->records[i].timestamp, "0000-00-00 00:00:00");
+            memcpy(highScores->records[i].initials, "???", 3);
+            for ( j = 0; j < TTetrominosCount ; j++ )
+                highScores->records[i].tetrominosOfType[j] = 0;
+            for ( j = 0; j < TScoreboardLineCountTypeListLength ; j++ )
+                highScores->records[i].nLinesOfType[j] = 0;
             i++;
         }
     }
@@ -323,20 +329,13 @@ THighScoresGetCount(
 
 bool
 THighScoresGetRecord(
-    THighScoresRef  highScores,
-    unsigned int    idx,
-    unsigned int    *score,
-    unsigned int    *level,
-    char            initials[3],
-    char            *timestamp,
-    int             timestampLen
+    THighScoresRef      highScores,
+    unsigned int        idx,
+    THighScoreRecord    *theRecord
 )
 {
     if ( idx < highScores->nScores ) {
-        if ( score ) *score = highScores->scores[idx].score;
-        if ( level ) *level = highScores->scores[idx].level;
-        if ( timestamp && timestampLen ) strncpy(timestamp, highScores->scores[idx].timestamp, timestampLen);
-        memcpy(initials, highScores->scores[idx].initials, 3);
+        memcpy(theRecord, &highScores->records[idx], sizeof(THighScoreRecord));
         return true;
     }
     return false;
@@ -354,7 +353,7 @@ THighScoresDoesQualify(
     int             i = 0;
     
     while ( i < highScores->nScores ) {
-        if ( highScores->scores[i].score < score ) {
+        if ( highScores->records[i].score < score ) {
             if ( rank ) *rank = i;
             return true;
         }
@@ -367,16 +366,14 @@ THighScoresDoesQualify(
 
 bool
 THighScoresRegister(
-    THighScoresRef  highScores,
-    unsigned int    score,
-    unsigned int    level,
-    char            initials[3]
+    THighScoresRef      highScores,
+    THighScoreRecord    *theNewRecord
 )
 {
     int             i = 0;
     
     while ( i < highScores->nScores ) {
-        if ( highScores->scores[i].score < score ) break;
+        if ( highScores->records[i].score < theNewRecord->score ) break;
         i++;
     }
     if ( i < highScores->nScores ) {
@@ -388,13 +385,11 @@ THighScoresRegister(
         // to make room:
         j = highScores->nScores - 1;
         while ( j > i ) {
-            highScores->scores[j] = highScores->scores[j - 1];
+            highScores->records[j] = highScores->records[j - 1];
             j--;
         }
-        highScores->scores[i].score = score;
-        highScores->scores[i].level = level;
-        strftime(highScores->scores[i].timestamp, sizeof(highScores->scores[i].timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
-        memcpy(highScores->scores[i].initials, initials, 3);
+        memcpy(&highScores->records[i], theNewRecord, sizeof(THighScoreRecord));
+        strftime(highScores->records[i].timestamp, sizeof(highScores->records[i].timestamp), "%Y-%m-%d %H:%M:%S", localtime(&now));
         return true;
     }
     return false;
@@ -409,8 +404,8 @@ THighScoresSave(
 )
 {
     bool            rc = false;
-    int             i = 0, iMax = highScores->nScores;
-    size_t          origByteSize = sizeof(THighScores) + iMax * sizeof(THighScore), nBytes;
+    int             i = 0, iMax = highScores->nScores, j;
+    size_t          origByteSize = sizeof(THighScores) + iMax * sizeof(THighScoreRecord), nBytes;
     size_t          encodedByteSize = 4 * ((origByteSize / 3) + ((origByteSize % 3) > 0));
     uint8_t         *origBytes = (uint8_t*)highScores, *encodedBytes = (uint8_t*)malloc(encodedByteSize),
                     *endOrigBytes = origBytes + origByteSize, *outB = encodedBytes;
@@ -424,8 +419,12 @@ THighScoresSave(
             highScores->magic = __THighScoreHostSwapBEUInt64(highScores->magic);
             highScores->nScores = __THighScoreHostSwapBEUInt32(highScores->nScores);
             while ( i < iMax ) {
-                highScores->scores[i].score = __THighScoreHostSwapBEUInt32(highScores->scores[i].score);
-                highScores->scores[i].level = __THighScoreHostSwapBEUInt32(highScores->scores[i].level);
+                highScores->records[i].score = __THighScoreHostSwapBEUInt32(highScores->records[i].score);
+                highScores->records[i].level = __THighScoreHostSwapBEUInt32(highScores->records[i].level);
+                for ( j = 0; j < TTetrominosCount ; j++ )
+                    highScores->records[i].tetrominosOfType[j] = __THighScoreHostSwapBEUInt32(highScores->records[i].tetrominosOfType[j]);
+                for ( j = 0; j < TScoreboardLineCountTypeListLength ; j++ )
+                    highScores->records[i].nLinesOfType[j] = __THighScoreHostSwapBEUInt32(highScores->records[i].nLinesOfType[j]);
                 i++;
             }
         }
@@ -457,8 +456,12 @@ THighScoresSave(
             highScores->nScores = __THighScoreHostSwapBEUInt32(highScores->nScores);
             i = 0;
             while ( i < iMax ) {
-                highScores->scores[i].score = __THighScoreHostSwapBEUInt32(highScores->scores[i].score);
-                highScores->scores[i].level = __THighScoreHostSwapBEUInt32(highScores->scores[i].level);
+                highScores->records[i].score = __THighScoreHostSwapBEUInt32(highScores->records[i].score);
+                highScores->records[i].level = __THighScoreHostSwapBEUInt32(highScores->records[i].level);
+                for ( j = 0; j < TTetrominosCount ; j++ )
+                    highScores->records[i].tetrominosOfType[j] = __THighScoreHostSwapBEUInt32(highScores->records[i].tetrominosOfType[j]);
+                for ( j = 0; j < TScoreboardLineCountTypeListLength ; j++ )
+                    highScores->records[i].nLinesOfType[j] = __THighScoreHostSwapBEUInt32(highScores->records[i].nLinesOfType[j]);
                 i++;
             }
         }
@@ -510,9 +513,9 @@ main()
         printf("%016llX  %u\n", highScores->magic, highScores->nScores);
         while ( i < highScores->nScores ) {
             printf("%d.    %c%c%c    %8u (%u)\n", i + 1,
-                        highScores->scores[i].initials[0], highScores->scores[i].initials[1],
-                        highScores->scores[i].initials[2], highScores->scores[i].score,
-                        highScores->scores[i].playerUid
+                        highScores->records[i].initials[0], highScores->records[i].initials[1],
+                        highScores->records[i].initials[2], highScores->records[i].score,
+                        highScores->records[i].playerUid
                     );
             i++;
         }
