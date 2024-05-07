@@ -27,6 +27,7 @@
 #include "THighScores.h"
 #include "tui_window.h"
 
+#include <ctype.h>
 #include <locale.h>
 #include <langinfo.h>
 
@@ -604,6 +605,14 @@ scoreboardDraw(
 
 //
 
+static const char* awaitingStartStrings[4] = {
+                        "                 ",
+                        "  press any key  ",
+                        "    to  start    ",
+                        "                 "
+                    };
+static unsigned int awaitingStartStringsLen = 17;
+
 static const char* gamePausedStrings[3] = {
                         "             ",
                         "  P A U S E  ",
@@ -630,100 +639,147 @@ gameBoardDraw_BW(
 #define GAME_ENGINE ((TGameEngine*)context)
 #define THE_BOARD   GAME_ENGINE->gameBoard
 #define THE_PIECE   GAME_ENGINE->currentSprite
+
+    switch ( GAME_ENGINE->gameState ) {
     
-    int                 i, j, spriteILo, spriteIHi, spriteJLo, spriteJHi, extraIShift = 0;
-    chtype              line1[THE_BOARD->dimensions.w * 4 + 1];
-    chtype              line2[THE_BOARD->dimensions.w * 4 + 1];
-    TBitGridIterator    *gridScanner = TBitGridIteratorCreate(THE_BOARD, 1);
-    TGridPos            P;
-    uint16_t            spriteBits = TSpriteGet4x4(&THE_PIECE);
+        case TGameEngineStateStartup: {
+            int     x = 2 + (4 * THE_BOARD->dimensions.w - awaitingStartStringsLen) / 2;
+            int     y = THE_BOARD->dimensions.h - 4;
     
-    // Skip any lines that are off-screen above the board:
-    if ( THE_PIECE.P.j < 0 ) {
-        spriteBits >>= 4 * (-THE_PIECE.P.j);
-        spriteJLo = 0;
-        spriteJHi = 4 + THE_PIECE.P.j;
-    } else {
-        spriteJLo = THE_PIECE.P.j;
-        spriteJHi = 4 + spriteJLo;
-    }
-    
-    // If the piece is off-screen to the left then force a
-    // left-shift:
-    if ( THE_PIECE.P.i < 0 ) {
-        int     steps = THE_PIECE.P.i;
-        
-        while ( steps++ < 0 )
-            spriteBits = (spriteBits & 0xEEEE) >> 1;
-        spriteILo = 0;
-        spriteIHi = 4 + THE_PIECE.P.i;
-        extraIShift = -THE_PIECE.P.i;
-    } else {
-        spriteILo = THE_PIECE.P.i;
-        spriteIHi = 4 + spriteILo;
-        extraIShift = (spriteIHi > THE_BOARD->dimensions.w) ? (spriteIHi - THE_BOARD->dimensions.w) : 0;
-    }
-    
-    j = 0;
-    while ( j < THE_BOARD->dimensions.h ) {
-        chtype          *line1Ptr = line1, *line2Ptr = line2;
-        
-        i = 0;
-        while ( i < THE_BOARD->dimensions.w ) {
-            TCell       cellValue;
-            bool        spriteBit = false, gridBit = TBitGridIteratorNext(gridScanner, &P, &cellValue);
-            
-            // Sprite?
-            if ((j >= spriteJLo) && (j < spriteJHi) && (i >= spriteILo) && (i < spriteIHi)) {
-                spriteBit = spriteBits & 0x1;
-                spriteBits >>= 1;
-            }
-            if ( GAME_ENGINE->hasEnded ) {
-                *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
-                *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
-            }
-            else if ( spriteBit || (gridBit && cellValue) ) {
-                *line1Ptr++ = A_REVERSE | '|'; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
-                *line2Ptr++ = A_REVERSE | '|'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
-            }
-            else {
-                *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
-                *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
-            }
-            i++;
+            mvwprintw(window_ptr, y++, x, "%s", awaitingStartStrings[0]);
+            mvwprintw(window_ptr, y++, x, "%s", awaitingStartStrings[1]);
+            mvwprintw(window_ptr, y++, x, "%s", awaitingStartStrings[2]);
+            break;
         }
-        if ( (j >= spriteJLo) && (j < spriteJHi) && extraIShift ) spriteBits >>= extraIShift;
-        wmove(window_ptr, 1 + 2 * j, 2);
-        i = (line1Ptr - line1); line1Ptr = line1;
-        while ( i-- ) waddch(window_ptr, *line1Ptr++);
-        wmove(window_ptr, 2 + 2 * j, 2);
-        i = (line2Ptr - line2); line2Ptr = line2;
-        while ( i-- ) waddch(window_ptr, *line2Ptr++);
-        j++;
-    }
-    TBitGridIteratorDestroy(gridScanner);
+            
+        case TGameEngineStateGameIsPaused:
+        case TGameEngineStateCheckHighScore:
+        case TGameEngineStateGameHasEnded: {
+            int             i, j;
+            chtype          line1[THE_BOARD->dimensions.w * 4 + 1];
+            chtype          line2[THE_BOARD->dimensions.w * 4 + 1];
+        
+            j = 0;
+            while ( j < THE_BOARD->dimensions.h ) {
+                chtype          *line1Ptr = line1, *line2Ptr = line2;
+        
+                i = 0;
+                while ( i++ < THE_BOARD->dimensions.w ) {
+                    *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
+                    *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
+                }
+                wmove(window_ptr, 1 + 2 * j, 2);
+                i = (line1Ptr - line1); line1Ptr = line1;
+                while ( i-- ) waddch(window_ptr, *line1Ptr++);
+                wmove(window_ptr, 2 + 2 * j, 2);
+                i = (line2Ptr - line2); line2Ptr = line2;
+                while ( i-- ) waddch(window_ptr, *line2Ptr++);
+                j++;
+            }
+            if ( GAME_ENGINE->gameState >= TGameEngineStateCheckHighScore ) {
+                int     x = 2 + (4 * THE_BOARD->dimensions.w - gameOverStringsLen) / 2;
+                int     y = THE_BOARD->dimensions.h - 4;
+        
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[0]);
+                wattron(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[1]);
+                wattroff(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[2]);
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[3]);
+                mvwprintw(window_ptr, y, x, "%s", gameOverStrings[4]);
+            }
+            else if ( GAME_ENGINE->gameState == TGameEngineStateGameIsPaused ) {
+                int     x = 2 + (4 * THE_BOARD->dimensions.w - gamePausedStringsLen) / 2;
+                int     y = THE_BOARD->dimensions.h - 4;
+        
+                mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[0]);
+                wattron(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[1]);
+                wattroff(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y, x, "%s", gamePausedStrings[2]);
+            }
+            break;
+        }
+        
+        case TGameEngineStateGameHasStarted:
+        case TGameEngineStateHoldClearedLines: {
+            int                 i, j, spriteILo, spriteIHi, spriteJLo, spriteJHi, extraIShift = 0;
+            chtype              line1[THE_BOARD->dimensions.w * 4 + 1];
+            chtype              line2[THE_BOARD->dimensions.w * 4 + 1];
+            TBitGridIterator    *gridScanner = TBitGridIteratorCreate(THE_BOARD, 0b11);
+            TGridPos            P;
+            uint16_t            spriteBits = TSpriteGet4x4(&THE_PIECE);
     
-    if ( GAME_ENGINE->hasEnded ) {
-        int     x = 2 + (4 * THE_BOARD->dimensions.w - gameOverStringsLen) / 2;
-        int     y = THE_BOARD->dimensions.h - 4;
+            // Skip any lines that are off-screen above the board:
+            if ( THE_PIECE.P.j < 0 ) {
+                spriteBits >>= 4 * (-THE_PIECE.P.j);
+                spriteJLo = 0;
+                spriteJHi = 4 + THE_PIECE.P.j;
+            } else {
+                spriteJLo = THE_PIECE.P.j;
+                spriteJHi = 4 + spriteJLo;
+            }
+    
+            // If the piece is off-screen to the left then force a
+            // left-shift:
+            if ( THE_PIECE.P.i < 0 ) {
+                int     steps = THE_PIECE.P.i;
         
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[0]);
-        wattron(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[1]);
-        wattroff(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[2]);
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[3]);
-        mvwprintw(window_ptr, y, x, "%s", gameOverStrings[4]);
-    }
-    else if ( GAME_ENGINE->isPaused ) {
-        int     x = 2 + (4 * THE_BOARD->dimensions.w - gamePausedStringsLen) / 2;
-        int     y = THE_BOARD->dimensions.h - 4;
+                while ( steps++ < 0 )
+                    spriteBits = (spriteBits & 0xEEEE) >> 1;
+                spriteILo = 0;
+                spriteIHi = 4 + THE_PIECE.P.i;
+                extraIShift = -THE_PIECE.P.i;
+            } else {
+                spriteILo = THE_PIECE.P.i;
+                spriteIHi = 4 + spriteILo;
+                extraIShift = (spriteIHi > THE_BOARD->dimensions.w) ? (spriteIHi - THE_BOARD->dimensions.w) : 0;
+            }
+    
+            j = 0;
+            while ( j < THE_BOARD->dimensions.h ) {
+                chtype          *line1Ptr = line1, *line2Ptr = line2;
         
-        mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[0]);
-        wattron(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[1]);
-        wattroff(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y, x, "%s", gamePausedStrings[2]);
+                i = 0;
+                while ( i < THE_BOARD->dimensions.w ) {
+                    TCell       cellValue;
+                    bool        spriteBit = false, gridBit = TBitGridIteratorNext(gridScanner, &P, &cellValue);
+            
+                    // Sprite?
+                    if ((j >= spriteJLo) && (j < spriteJHi) && (i >= spriteILo) && (i < spriteIHi)) {
+                        spriteBit = spriteBits & 0x1;
+                        spriteBits >>= 1;
+                    }
+                    if ( (GAME_ENGINE->gameState != TGameEngineStateHoldClearedLines) && spriteBit ) {
+                        *line1Ptr++ = A_REVERSE | '|'; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' '; *line1Ptr++ = A_REVERSE | ' ';
+                        *line2Ptr++ = A_REVERSE | '|'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_'; *line2Ptr++ = A_REVERSE | '_';
+                    }
+                    else if ( (gridBit && TCellGetIsOccupied(cellValue)) ) {
+                        int         modifier = A_REVERSE;
+            
+                        if ( TCellGetIsCompleted(cellValue) && ! GAME_ENGINE->completionFlashIdx ) modifier = 0;
+                
+                        *line1Ptr++ = modifier | '|'; *line1Ptr++ = modifier | ' '; *line1Ptr++ = modifier | ' '; *line1Ptr++ = modifier | ' ';
+                        *line2Ptr++ = modifier | '|'; *line2Ptr++ = modifier | '_'; *line2Ptr++ = modifier | '_'; *line2Ptr++ = modifier | '_';
+                    }
+                    else {
+                        *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
+                        *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
+                    }
+                    i++;
+                }
+                if ( (j >= spriteJLo) && (j < spriteJHi) && extraIShift ) spriteBits >>= extraIShift;
+                wmove(window_ptr, 1 + 2 * j, 2);
+                i = (line1Ptr - line1); line1Ptr = line1;
+                while ( i-- ) waddch(window_ptr, *line1Ptr++);
+                wmove(window_ptr, 2 + 2 * j, 2);
+                i = (line2Ptr - line2); line2Ptr = line2;
+                while ( i-- ) waddch(window_ptr, *line2Ptr++);
+                j++;
+            }
+            TBitGridIteratorDestroy(gridScanner);
+            break;
+        }
     }
 
 #undef THE_PIECE
@@ -855,35 +911,37 @@ nextTetrominoDraw_BW(
 )
 {
 #define GAME_ENGINE ((TGameEngine*)context)
-    chtype          line1[4 * 4], *line1Ptr = line1;
-    chtype          line2[4 * 4], *line2Ptr = line2;
-    unsigned int    count, j = 0;
-    uint16_t        rep, mask = 0x0001;
+    if ( (GAME_ENGINE->gameState == TGameEngineStateGameHasStarted) || (GAME_ENGINE->gameState == TGameEngineStateHoldClearedLines) ) {
+        chtype          line1[4 * 4], *line1Ptr = line1;
+        chtype          line2[4 * 4], *line2Ptr = line2;
+        unsigned int    count, j = 0;
+        uint16_t        rep, mask = 0x0001;
     
-    wclear(window_ptr);
+        wclear(window_ptr);
 
-    rep = TSpriteGet4x4(&GAME_ENGINE->nextSprite);
+        rep = TSpriteGet4x4(&GAME_ENGINE->nextSprite);
     
-    while ( j < 4 ) {
-        line1Ptr = line1, line2Ptr = line2;
-        count = 4; while ( count-- ) {
-            if (rep & mask) {
-                *line1Ptr++ = '|' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE;
-                *line2Ptr++ = '|' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE;
-            } else {
-                *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
-                *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
+        while ( j < 4 ) {
+            line1Ptr = line1, line2Ptr = line2;
+            count = 4; while ( count-- ) {
+                if (rep & mask) {
+                    *line1Ptr++ = '|' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE; *line1Ptr++ = ' ' | A_REVERSE;
+                    *line2Ptr++ = '|' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE; *line2Ptr++ = '_' | A_REVERSE;
+                } else {
+                    *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
+                    *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
+                }
+                mask <<= 1;
             }
-            mask <<= 1;
-        }
-        wmove(window_ptr, 2 + 2 * j, 3);
-        count = line1Ptr - line1; line1Ptr = line1;
-        while ( count-- ) waddch(window_ptr, *line1Ptr++);
-        wmove(window_ptr, 3 + 2 * j, 3);
-        count = line2Ptr - line2; line2Ptr = line2;
-        while ( count-- ) waddch(window_ptr, *line2Ptr++);
+            wmove(window_ptr, 2 + 2 * j, 3);
+            count = line1Ptr - line1; line1Ptr = line1;
+            while ( count-- ) waddch(window_ptr, *line1Ptr++);
+            wmove(window_ptr, 3 + 2 * j, 3);
+            count = line2Ptr - line2; line2Ptr = line2;
+            while ( count-- ) waddch(window_ptr, *line2Ptr++);
         
-        j++;
+            j++;
+        }
     }
 #define GAME_ENGINE ((TGameEngine*)context)
 }
@@ -904,109 +962,154 @@ gameBoardDraw_COLOR(
 #define GAME_ENGINE ((TGameEngine*)context)
 #define THE_BOARD   GAME_ENGINE->gameBoard
 #define THE_PIECE   GAME_ENGINE->currentSprite
-    
-    int                 i, j, spriteILo, spriteIHi, spriteJLo, spriteJHi, extraIShift = 0;
-    chtype              line1[THE_BOARD->dimensions.w * 4 + 1];
-    chtype              line2[THE_BOARD->dimensions.w * 4 + 1];
-    TBitGridIterator    *gridScanner = TBitGridIteratorCreate(THE_BOARD, 0x7);
-    TGridPos            P;
-    uint16_t            spriteBits = TSpriteGet4x4(&THE_PIECE);
-    int                 spriteColorIdx = 1 + THE_PIECE.colorIdx;
-    
-    // Skip any lines that are off-screen above the board:
-    if ( THE_PIECE.P.j < 0 ) {
-        spriteBits >>= 4 * (-THE_PIECE.P.j);
-        spriteJLo = 0;
-        spriteJHi = 4 + THE_PIECE.P.j;
-    } else {
-        spriteJLo = THE_PIECE.P.j;
-        spriteJHi = 4 + spriteJLo;
-    }
-    
-    // If the piece is off-screen to the left then force a
-    // left-shift:
-    if ( THE_PIECE.P.i < 0 ) {
-        int     steps = THE_PIECE.P.i;
-        
-        while ( steps++ < 0 )
-            spriteBits = (spriteBits & 0xEEEE) >> 1;
-        spriteILo = 0;
-        spriteIHi = 4 + THE_PIECE.P.i;
-        extraIShift = -THE_PIECE.P.i;
-    } else {
-        spriteILo = THE_PIECE.P.i;
-        spriteIHi = 4 + spriteILo;
-        extraIShift = (spriteIHi > THE_BOARD->dimensions.w) ? (spriteIHi - THE_BOARD->dimensions.w) : 0;
-    }
-    
-    j = 0;
-    while ( j < THE_BOARD->dimensions.h ) {
-        chtype          *line1Ptr = line1, *line2Ptr = line2;
-        
-        i = 0;
-        while ( i < THE_BOARD->dimensions.w ) {
-            TCell       cellValue;
-            bool        spriteBit = false, gridBit = TBitGridIteratorNext(gridScanner, &P, &cellValue);
-            
-            // Sprite?
-            if ((j >= spriteJLo) && (j < spriteJHi) && (i >= spriteILo) && (i < spriteIHi)) {
-                spriteBit = spriteBits & 0x1;
-                spriteBits >>= 1;
-            }
-            if ( GAME_ENGINE->hasEnded ) {
-                *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' '; *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' '; *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' '; *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' ';
-                *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_'; *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_'; *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_'; *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_';
-            }
-            else if ( spriteBit ) {
-                *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | '|'; *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | ' '; *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | ' '; *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | ' ';
-                *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '|'; *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '_'; *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '_'; *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '_';
-            }
-            else if ( (gridBit && TCellGetIsOccupied(cellValue)) ) {
-                int     colorIdx = 1 + TCellGetColorIndex(cellValue);
-                
-                *line1Ptr++ = COLOR_PAIR(colorIdx) | '|'; *line1Ptr++ = COLOR_PAIR(colorIdx) | ' '; *line1Ptr++ = COLOR_PAIR(colorIdx) | ' '; *line1Ptr++ = COLOR_PAIR(colorIdx) | ' ';
-                *line2Ptr++ = COLOR_PAIR(colorIdx) | '|'; *line2Ptr++ = COLOR_PAIR(colorIdx) | '_'; *line2Ptr++ = COLOR_PAIR(colorIdx) | '_'; *line2Ptr++ = COLOR_PAIR(colorIdx) | '_';
-            }
-            else {
-                *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
-                *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
-            }
-            i++;
-        }
-        if ( (j >= spriteJLo) && (j < spriteJHi) && extraIShift ) spriteBits >>= extraIShift;
-        wmove(window_ptr, 1 + 2 * j, 2);
-        i = (line1Ptr - line1); line1Ptr = line1;
-        while ( i-- ) waddch(window_ptr, *line1Ptr++);
-        wmove(window_ptr, 2 + 2 * j, 2);
-        i = (line2Ptr - line2); line2Ptr = line2;
-        while ( i-- ) waddch(window_ptr, *line2Ptr++);
-        j++;
-    }
-    TBitGridIteratorDestroy(gridScanner);
-    
-    if ( GAME_ENGINE->hasEnded ) {
-        int     x = 2 + (4 * THE_BOARD->dimensions.w - gameOverStringsLen) / 2;
-        int     y = THE_BOARD->dimensions.h - 4;
-        
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[0]);
-        wattron(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[1]);
-        wattroff(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[2]);
-        mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[3]);
-        mvwprintw(window_ptr, y, x, "%s", gameOverStrings[4]);
-    }
-    else if ( GAME_ENGINE->isPaused ) {
-        int     x = 2 + (4 * THE_BOARD->dimensions.w - gamePausedStringsLen) / 2;
-        int     y = THE_BOARD->dimensions.h - 4;
-        
-        mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[0]);
-        wattron(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[1]);
-        wattroff(window_ptr, A_BLINK);
-        mvwprintw(window_ptr, y, x, "%s", gamePausedStrings[2]);
-    }
 
+    switch ( GAME_ENGINE->gameState ) {
+    
+        case TGameEngineStateStartup: {
+            int     x = 2 + (4 * THE_BOARD->dimensions.w - awaitingStartStringsLen) / 2;
+            int     y = THE_BOARD->dimensions.h - 4;
+    
+            mvwprintw(window_ptr, y++, x, "%s", awaitingStartStrings[0]);
+            mvwprintw(window_ptr, y++, x, "%s", awaitingStartStrings[1]);
+            mvwprintw(window_ptr, y++, x, "%s", awaitingStartStrings[2]);
+            break;
+        }
+            
+        case TGameEngineStateGameIsPaused:
+        case TGameEngineStateCheckHighScore:
+        case TGameEngineStateGameHasEnded: {
+            int             i, j;
+            chtype          line1[THE_BOARD->dimensions.w * 4 + 1];
+            chtype          line2[THE_BOARD->dimensions.w * 4 + 1];
+        
+            j = 0;
+            while ( j < THE_BOARD->dimensions.h ) {
+                chtype          *line1Ptr = line1, *line2Ptr = line2;
+        
+                i = 0;
+                while ( i++ < THE_BOARD->dimensions.w ) {
+                    *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' '; *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' '; *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' '; *line1Ptr++ = COLOR_PAIR(1 + (j %3)) | ' ';
+                    *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_'; *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_'; *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_'; *line2Ptr++ = COLOR_PAIR(1 + (j %3)) | '_';
+                }
+                wmove(window_ptr, 1 + 2 * j, 2);
+                i = (line1Ptr - line1); line1Ptr = line1;
+                while ( i-- ) waddch(window_ptr, *line1Ptr++);
+                wmove(window_ptr, 2 + 2 * j, 2);
+                i = (line2Ptr - line2); line2Ptr = line2;
+                while ( i-- ) waddch(window_ptr, *line2Ptr++);
+                j++;
+            }
+            if ( GAME_ENGINE->gameState >= TGameEngineStateCheckHighScore ) {
+                int     x = 2 + (4 * THE_BOARD->dimensions.w - gameOverStringsLen) / 2;
+                int     y = THE_BOARD->dimensions.h - 4;
+        
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[0]);
+                wattron(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[1]);
+                wattroff(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[2]);
+                mvwprintw(window_ptr, y++, x, "%s", gameOverStrings[3]);
+                mvwprintw(window_ptr, y, x, "%s", gameOverStrings[4]);
+            }
+            else if ( GAME_ENGINE->gameState == TGameEngineStateGameIsPaused ) {
+                int     x = 2 + (4 * THE_BOARD->dimensions.w - gamePausedStringsLen) / 2;
+                int     y = THE_BOARD->dimensions.h - 4;
+        
+                mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[0]);
+                wattron(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y++, x, "%s", gamePausedStrings[1]);
+                wattroff(window_ptr, A_BLINK);
+                mvwprintw(window_ptr, y, x, "%s", gamePausedStrings[2]);
+            }
+            break;
+        }
+        
+        case TGameEngineStateGameHasStarted:
+        case TGameEngineStateHoldClearedLines: {
+            int                 i, j, spriteILo, spriteIHi, spriteJLo, spriteJHi, extraIShift = 0;
+            chtype              line1[THE_BOARD->dimensions.w * 4 + 1];
+            chtype              line2[THE_BOARD->dimensions.w * 4 + 1];
+            TBitGridIterator    *gridScanner = TBitGridIteratorCreate(THE_BOARD, 0b1111);
+            TGridPos            P;
+            uint16_t            spriteBits = TSpriteGet4x4(&THE_PIECE);
+            int                 spriteColorIdx = 1 + THE_PIECE.colorIdx;
+    
+            // Skip any lines that are off-screen above the board:
+            if ( THE_PIECE.P.j < 0 ) {
+                spriteBits >>= 4 * (-THE_PIECE.P.j);
+                spriteJLo = 0;
+                spriteJHi = 4 + THE_PIECE.P.j;
+            } else {
+                spriteJLo = THE_PIECE.P.j;
+                spriteJHi = 4 + spriteJLo;
+            }
+    
+            // If the piece is off-screen to the left then force a
+            // left-shift:
+            if ( THE_PIECE.P.i < 0 ) {
+                int     steps = THE_PIECE.P.i;
+        
+                while ( steps++ < 0 )
+                    spriteBits = (spriteBits & 0xEEEE) >> 1;
+                spriteILo = 0;
+                spriteIHi = 4 + THE_PIECE.P.i;
+                extraIShift = -THE_PIECE.P.i;
+            } else {
+                spriteILo = THE_PIECE.P.i;
+                spriteIHi = 4 + spriteILo;
+                extraIShift = (spriteIHi > THE_BOARD->dimensions.w) ? (spriteIHi - THE_BOARD->dimensions.w) : 0;
+            }
+    
+            j = 0;
+            while ( j < THE_BOARD->dimensions.h ) {
+                chtype          *line1Ptr = line1, *line2Ptr = line2;
+        
+                i = 0;
+                while ( i < THE_BOARD->dimensions.w ) {
+                    TCell       cellValue;
+                    bool        spriteBit = false, gridBit = TBitGridIteratorNext(gridScanner, &P, &cellValue);
+            
+                    // If the sprite is in-range, decompose its bits:
+                    if ((j >= spriteJLo) && (j < spriteJHi) && (i >= spriteILo) && (i < spriteIHi)) {
+                        spriteBit = spriteBits & 0x1;
+                        spriteBits >>= 1;
+                    }
+                    // If we're clearing lines we don't draw the sprite bit:
+                    if ( (GAME_ENGINE->gameState != TGameEngineStateHoldClearedLines) && spriteBit ) {
+                        *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | '|'; *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | ' '; *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | ' '; *line1Ptr++ = COLOR_PAIR(spriteColorIdx) | ' ';
+                        *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '|'; *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '_'; *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '_'; *line2Ptr++ = COLOR_PAIR(spriteColorIdx) | '_';
+                    }
+                    else if ( (gridBit && TCellGetIsOccupied(cellValue)) ) {
+                        // Occupied cell, draw the tetromino box:
+                        int     colorIdx = 1 + TCellGetColorIndex(cellValue);
+                        int     modifier = COLOR_PAIR(colorIdx);
+            
+                        if ( TCellGetIsCompleted(cellValue) && GAME_ENGINE->completionFlashIdx ) modifier |= A_REVERSE;
+            
+                        *line1Ptr++ = modifier | '|'; *line1Ptr++ = modifier | ' '; *line1Ptr++ = modifier | ' '; *line1Ptr++ = modifier | ' ';
+                        *line2Ptr++ = modifier | '|'; *line2Ptr++ = modifier | '_'; *line2Ptr++ = modifier | '_'; *line2Ptr++ = modifier | '_';
+                    }
+                    else {
+                        // Nothing there...
+                        *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
+                        *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
+                    }
+                    i++;
+                }
+                if ( (j >= spriteJLo) && (j < spriteJHi) && extraIShift ) spriteBits >>= extraIShift;
+                wmove(window_ptr, 1 + 2 * j, 2);
+                i = (line1Ptr - line1); line1Ptr = line1;
+                while ( i-- ) waddch(window_ptr, *line1Ptr++);
+                wmove(window_ptr, 2 + 2 * j, 2);
+                i = (line2Ptr - line2); line2Ptr = line2;
+                while ( i-- ) waddch(window_ptr, *line2Ptr++);
+                j++;
+            }
+            TBitGridIteratorDestroy(gridScanner);
+            break;
+        }
+    }
+    
 #undef THE_PIECE
 #undef THE_BOARD
 #undef GAME_ENGINE
@@ -1127,36 +1230,38 @@ nextTetrominoDraw_COLOR(
 )
 {
 #define GAME_ENGINE ((TGameEngine*)context)
-    chtype          line1[4 * 4], *line1Ptr = line1;
-    chtype          line2[4 * 4], *line2Ptr = line2;
-    unsigned int    count, j = 0;
-    uint16_t        rep, mask = 0x0001;
-    int             colorIdx = 1 + GAME_ENGINE->nextSprite.colorIdx;
+    if ( (GAME_ENGINE->gameState == TGameEngineStateGameHasStarted) || (GAME_ENGINE->gameState == TGameEngineStateHoldClearedLines) ) {
+        chtype          line1[4 * 4], *line1Ptr = line1;
+        chtype          line2[4 * 4], *line2Ptr = line2;
+        unsigned int    count, j = 0;
+        uint16_t        rep, mask = 0x0001;
+        int             colorIdx = 1 + GAME_ENGINE->nextSprite.colorIdx;
     
-    wclear(window_ptr);
+        wclear(window_ptr);
 
-    rep = TSpriteGet4x4(&GAME_ENGINE->nextSprite);
+        rep = TSpriteGet4x4(&GAME_ENGINE->nextSprite);
     
-    while ( j < 4 ) {
-        line1Ptr = line1, line2Ptr = line2;
-        count = 4; while ( count-- ) {
-            if (rep & mask) {
-                *line1Ptr++ = '|' | COLOR_PAIR(colorIdx); *line1Ptr++ = ' ' | COLOR_PAIR(colorIdx); *line1Ptr++ = ' ' | COLOR_PAIR(colorIdx); *line1Ptr++ = ' ' | COLOR_PAIR(colorIdx);
-                *line2Ptr++ = '|' | COLOR_PAIR(colorIdx); *line2Ptr++ = '_' | COLOR_PAIR(colorIdx); *line2Ptr++ = '_' | COLOR_PAIR(colorIdx); *line2Ptr++ = '_' | COLOR_PAIR(colorIdx);
-            } else {
-                *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
-                *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
+        while ( j < 4 ) {
+            line1Ptr = line1, line2Ptr = line2;
+            count = 4; while ( count-- ) {
+                if (rep & mask) {
+                    *line1Ptr++ = '|' | COLOR_PAIR(colorIdx); *line1Ptr++ = ' ' | COLOR_PAIR(colorIdx); *line1Ptr++ = ' ' | COLOR_PAIR(colorIdx); *line1Ptr++ = ' ' | COLOR_PAIR(colorIdx);
+                    *line2Ptr++ = '|' | COLOR_PAIR(colorIdx); *line2Ptr++ = '_' | COLOR_PAIR(colorIdx); *line2Ptr++ = '_' | COLOR_PAIR(colorIdx); *line2Ptr++ = '_' | COLOR_PAIR(colorIdx);
+                } else {
+                    *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' '; *line1Ptr++ = ' ';
+                    *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' '; *line2Ptr++ = ' ';
+                }
+                mask <<= 1;
             }
-            mask <<= 1;
-        }
-        wmove(window_ptr, 2 + 2 * j, 3);
-        count = line1Ptr - line1; line1Ptr = line1;
-        while ( count-- ) waddch(window_ptr, *line1Ptr++);
-        wmove(window_ptr, 3 + 2 * j, 3);
-        count = line2Ptr - line2; line2Ptr = line2;
-        while ( count-- ) waddch(window_ptr, *line2Ptr++);
+            wmove(window_ptr, 2 + 2 * j, 3);
+            count = line1Ptr - line1; line1Ptr = line1;
+            while ( count-- ) waddch(window_ptr, *line1Ptr++);
+            wmove(window_ptr, 3 + 2 * j, 3);
+            count = line2Ptr - line2; line2Ptr = line2;
+            while ( count-- ) waddch(window_ptr, *line2Ptr++);
         
-        j++;
+            j++;
+        }
     }
 #define GAME_ENGINE ((TGameEngine*)context)
 }
@@ -1777,9 +1882,8 @@ retry_board_dims:
     timeout(0);
     
     savedLevel = gameEngine->scoreboard.level;
-    TGameEngineTick(gameEngine, TGameEngineEventStartGame);
     
-    while ( 1 ) {
+    while ( true ) {
         TGameEngineUpdateNotification   updateNotifications;
         TGameEngineEvent                gameEngineEvent = TGameEngineEventNoOp;
         
@@ -1789,71 +1893,91 @@ retry_board_dims:
         }
         
         // Check for game over:
-        if ( gameEngine->hasEnded && ! gameEngine->didDoHighScores ) {
-            THighScoresRef      highScores = THighScoresLoad(THighScoresFilePath);
-            unsigned int        highScoreRank;
-    
-            if ( ! highScores ) highScores = THighScoresCreate();
-            if ( THighScoresDoesQualify(highScores, gameEngine->scoreboard.score, &highScoreRank) ) {
-                doHighScoreWindow(
-                        highScores,
-                        tui_window_rect_make(screenWidth / 2 - 48 / 2,
-                                             screenHeight / 2 - 10/ 2,
-                                             48,
-                                             10
-                                    ),
-                        &gameEngine->scoreboard,
-                        highScoreRank
-                    );
-            } else {
-                doHighScoreWindow(
-                        highScores,
-                        tui_window_rect_make(screenWidth / 2 - 48 / 2,
-                                             screenHeight / 2 - 10/ 2,
-                                             48,
-                                             10
-                                    ),
-                        &gameEngine->scoreboard,
-                        0xFFFFFFFF
-                    );
-            }
-            gameEngine->didDoHighScores = true;
-            
-            refresh();
-            if ( isGameTitleDisplayed ) {
-#ifdef ENABLE_COLOR_DISPLAY
-                if ( wantsColor ) 
-                    gameTitleDraw_COLOR(mainWindow, screenWidth);
-                else
-#endif
-                gameTitleDraw_BW(mainWindow, screenWidth);
-            }
-            for ( idx = 0; idx < TWindowIndexMax; idx++ ) if (gameWindowsEnabled & (1 << idx)) tui_window_refresh(gameWindows[idx], 1);
-            doupdate();
-            updateNotifications = 0;
-        } else {
-            switch ( keyCh ) {
-                case '\r':
-                case '\n':
-                    gameEngineEvent = TGameEngineEventTogglePause;
-                    break;
-                case KEY_DOWN:
-                    gameEngineEvent = TGameEngineEventSoftDrop;
-                    break;
-                    gameEngineEvent = TGameEngineEventHardDrop;
-                    break;
-                case KEY_LEFT:
-                    gameEngineEvent = TGameEngineEventMoveLeft;
-                    break;
-                case KEY_RIGHT:
-                    gameEngineEvent = TGameEngineEventMoveRight;
-                    break;
-                default:
-                    gameEngineEvent = TKeymapEventForKey(&gameKeymap, keyCh);
-                    break;
-            }
+        switch ( gameEngine->gameState ) {
         
-            updateNotifications = TGameEngineTick(gameEngine, gameEngineEvent);
+            case TGameEngineStateStartup:
+                if ( keyCh != ERR ) TGameEngineTick(gameEngine, TGameEngineEventStartGame);
+                break;
+                
+            case TGameEngineStateGameHasEnded:
+                if ( TKeymapEventForKey(&gameKeymap, keyCh) == TGameEngineEventReset ) updateNotifications = TGameEngineTick(gameEngine, TGameEngineEventReset);
+                break;
+            
+            case TGameEngineStateCheckHighScore: {
+                THighScoresRef      highScores = THighScoresLoad(THighScoresFilePath);
+                unsigned int        highScoreRank;
+    
+                if ( ! highScores ) highScores = THighScoresCreate();
+                if ( THighScoresDoesQualify(highScores, gameEngine->scoreboard.score, &highScoreRank) ) {
+                    doHighScoreWindow(
+                            highScores,
+                            tui_window_rect_make(screenWidth / 2 - 48 / 2,
+                                                 screenHeight / 2 - 10/ 2,
+                                                 48,
+                                                 10
+                                        ),
+                            &gameEngine->scoreboard,
+                            highScoreRank
+                        );
+                } else {
+                    doHighScoreWindow(
+                            highScores,
+                            tui_window_rect_make(screenWidth / 2 - 48 / 2,
+                                                 screenHeight / 2 - 10/ 2,
+                                                 48,
+                                                 10
+                                        ),
+                            &gameEngine->scoreboard,
+                            0xFFFFFFFF
+                        );
+                }
+                
+                gameEngine->gameState = TGameEngineStateGameHasEnded;
+            
+                refresh();
+                if ( isGameTitleDisplayed ) {
+    #ifdef ENABLE_COLOR_DISPLAY
+                    if ( wantsColor ) 
+                        gameTitleDraw_COLOR(mainWindow, screenWidth);
+                    else
+    #endif
+                    gameTitleDraw_BW(mainWindow, screenWidth);
+                }
+                for ( idx = 0; idx < TWindowIndexMax; idx++ ) if (gameWindowsEnabled & (1 << idx)) tui_window_refresh(gameWindows[idx], 1);
+                doupdate();
+                updateNotifications = 0;
+                break;
+            }
+            
+            case TGameEngineStateHoldClearedLines:
+                updateNotifications = TGameEngineTick(gameEngine, gameEngineEvent);
+                break;
+            
+            default: {
+                switch ( keyCh ) {
+                    case '\r':
+                    case '\n':
+                        gameEngineEvent = TGameEngineEventTogglePause;
+                        break;
+                    case KEY_DOWN:
+                        gameEngineEvent = TGameEngineEventSoftDrop;
+                        break;
+                        gameEngineEvent = TGameEngineEventHardDrop;
+                        break;
+                    case KEY_LEFT:
+                        gameEngineEvent = TGameEngineEventMoveLeft;
+                        break;
+                    case KEY_RIGHT:
+                        gameEngineEvent = TGameEngineEventMoveRight;
+                        break;
+                    default:
+                        gameEngineEvent = TKeymapEventForKey(&gameKeymap, keyCh);
+                        break;
+                }
+        
+                updateNotifications = TGameEngineTick(gameEngine, gameEngineEvent);
+                break;
+            }
         }        
         if ( updateNotifications ) {
             refresh();
@@ -1878,13 +2002,7 @@ retry_board_dims:
             }
             doupdate();
         }
-            
-        double      dt_sec = timespec_to_double(&gameEngine->tElapsed);
-    
-        mvprintw(screenHeight - 1, 0, "%12.3lg ticks/sec", (double)gameEngine->tickCount / dt_sec);
     }
-    
-    double      dt_sec = timespec_to_double(&gameEngine->tElapsed);
     
     // Dispose of all windows:
     for ( idx = 0; idx < TWindowIndexMax; idx++ ) if (gameWindowsEnabled & (1 << idx)) tui_window_free(gameWindows[idx]);
@@ -1892,8 +2010,6 @@ retry_board_dims:
     refresh();    
     endwin();
     refresh();
-    
-    printf("%lg seconds, %lu ticks = %12.3lg ticks/sec\n", dt_sec, gameEngine->tickCount, (double)gameEngine->tickCount / dt_sec);
     
     return 0;
 }

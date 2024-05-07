@@ -40,7 +40,8 @@
  * a color game board requires a TBitGrid of four channels.
  */
 enum {
-    TCellColorMask      = 0b00000110,
+    TCellColorMask      = 0b00001100,
+    TCellIsCompleted    = 0b00000010,
     TCellIsOccupied     = 0b00000001
 };
 
@@ -66,19 +67,38 @@ TCellMake1Bit(
 }
 
 /*
- * @function TCellMake3Bit
+ * @function TCellMake2Bit
  *
- * Initializes and returns a TCell with the on/off state of
- * isOccupied and the given colorIndex represented.
+ * Initializes and returns a TCell with the on/off
+ * states isOccupied and isCompleted represented.
  */
 static inline TCell
-TCellMake3Bit(
+TCellMake2Bit(
     bool        isOccupied,
+    bool        isCompleted
+)
+{
+    return (uint8_t)((isOccupied ? TCellIsOccupied : 0) |
+                     (isCompleted ? TCellIsCompleted : 0));
+}
+
+/*
+ * @function TCellMake4Bit
+ *
+ * Initializes and returns a TCell with the on/off state of
+ * isOccupied and isCompleted and the given colorIndex
+ * represented.
+ */
+static inline TCell
+TCellMake4Bit(
+    bool        isOccupied,
+    bool        isCompleted,
     int         colorIndex
 )
 {
     return (uint8_t)((isOccupied ? TCellIsOccupied : 0) |
-                     ((uint8_t)(colorIndex << 1) & TCellColorMask));
+                     (isCompleted ? TCellIsCompleted : 0) |
+                     ((uint8_t)(colorIndex << 2) & TCellColorMask));
 }
 
 /*
@@ -96,6 +116,20 @@ TCellGetIsOccupied(
 }
 
 /*
+ * @function TCellGetIsCompleted
+ *
+ * Returns true if theCell has the is-completed bit set, false
+ * otherwise.
+ */
+static inline bool
+TCellGetIsCompleted(
+    TCell       theCell
+)
+{
+    return ((theCell & TCellIsCompleted) != 0);
+}
+
+/*
  * @function TCellGetColorIndex
  *
  * Returns the color index present in theCell.
@@ -105,7 +139,7 @@ TCellGetColorIndex(
     TCell       theCell
 )
 {
-    return (theCell & TCellColorMask) >> 1;
+    return (theCell & TCellColorMask) >> 2;
 }
     
 #endif /* __TCELL_H__ */

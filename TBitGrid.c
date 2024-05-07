@@ -1418,7 +1418,7 @@ TBitGridDestroy(
 //
 
 void
-TBitGridFill(
+TBitGridFillCells(
     TBitGrid    *bitGrid,
     TCell       value
 )
@@ -1432,6 +1432,31 @@ TBitGridFill(
             memset(bitGrid->grid[channelIdx].b8, 0x00, bitGrid->dimensions.nWordsTotal * bitGrid->dimensions.nBytesPerWord);
         channelIdx++;
         channelMask <<= 1;
+    }
+}
+
+//
+
+void
+TBitGridSetChannelInRowRange(
+    TBitGrid        *bitGrid,
+    unsigned int    channelIdx,
+    unsigned int    jLow,
+    unsigned int    jHigh,
+    bool            value
+)
+{
+    if ( channelIdx < bitGrid->dimensions.nChannels ) {
+        size_t          nBytesPerRow = bitGrid->dimensions.nWordsPerRow * bitGrid->dimensions.nBytesPerWord;
+        unsigned int    nWholeBytes = bitGrid->dimensions.w / 8, nPartialBits = (1 << (bitGrid->dimensions.w % 8)) - 1;
+        uint8_t         *p = bitGrid->grid[channelIdx].b8 + jLow * nBytesPerRow,
+                        *pEnd = bitGrid->grid[channelIdx].b8 + (jHigh + 1) * nBytesPerRow;
+        
+        while ( p < pEnd ) {
+            if ( nWholeBytes ) memset(p, 0xFF, nWholeBytes);
+            if ( nPartialBits ) p[nWholeBytes] = nPartialBits;
+            p += nBytesPerRow;
+        }
     }
 }
 

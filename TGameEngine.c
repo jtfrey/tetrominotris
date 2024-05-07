@@ -6,12 +6,15 @@
 
 struct timespec TGameEngineZeroTime = { .tv_sec = 0, .tv_nsec = 0 };
 
+struct timespec TGameEngine500ms = { .tv_sec = 0, .tv_nsec = 500000000 };
+
 //
 
 enum {
-    TGameEngineBitGridChannelIsOccupied = 1 << 0,
-    TGameEngineBitGridChannelIsFlashing = 1 << 1,
-    TGameEngineBitGridChannelColorIndex = (1 << 2) | (1 << 3)
+    TGameEngineBitGridChannelIsOccupied = 0,
+    TGameEngineBitGridChannelIsCompleted = 1,
+    TGameEngineBitGridChannelColorIndexBit0 = 2,
+    TGameEngineBitGridChannelColorIndexBit1 = 3,
 };
 
 //
@@ -26,7 +29,7 @@ TGameEngineCreate(
 )
 {
     TGameEngine     *newEngine = NULL;
-    TBitGrid        *gameBoard = TBitGridCreate(wordSize, useColor ? 3 : 1, w, h);
+    TBitGrid        *gameBoard = TBitGridCreate(wordSize, useColor ? 4 : 2, w, h);
     
     if ( gameBoard ) {
         newEngine = (TGameEngine*)malloc(sizeof(TGameEngine));    
@@ -76,10 +79,10 @@ TGameEngineReset(
     initstate(time(NULL), gameEngine->randomState, TGAMEENGINE_RANDOM_NSTATE);
     
     // Ensure an empty game board to start:
-    TBitGridFill(gameEngine->gameBoard, 0);
+    TBitGridFillCells(gameEngine->gameBoard, 0);
             
     //  Fill-in the rest of the game engine fields:
-    gameEngine->hasBeenStarted = gameEngine->isPaused = gameEngine->hasEnded = gameEngine->didDoHighScores = false;
+    gameEngine->gameState = TGameEngineStateStartup;
     gameEngine->startingPos = TGridPosMake(gameEngine->gameBoard->dimensions.w / 2, 0);
             
     // Shift two pieces into the engine, current and next:
@@ -120,31 +123,34 @@ TGameEngineChooseNextPiece(
     
     // To be fair, back the piece up as many rows as necessary to align the
     // next piece with the top of the game grid:
+    gameEngine->nextSprite.P.i = (gameEngine->gameBoard->dimensions.w - 4) / 2;
     gameEngine->nextSprite.P.j -= TSpriteGetInitialClearRows(&gameEngine->nextSprite);
 }
 
 //
 
-void
+bool
 TGameEngineCheckForCompleteRows(
-    TGameEngine     *gameEngine
+    TGameEngine     *gameEngine,
+    bool            shouldTestOnly
 )
 {
-    TGameEngineCheckForCompleteRowsInRange(gameEngine, 0, gameEngine->gameBoard->dimensions.h - 1);
+    return TGameEngineCheckForCompleteRowsInRange(gameEngine, shouldTestOnly, 0, gameEngine->gameBoard->dimensions.h - 1);
 }
 
-void
+bool
 TGameEngineCheckForCompleteRowsInRange(
     TGameEngine     *gameEngine,
+    bool            shouldTestOnly,
     unsigned int    startRow,
     unsigned int    endRow
 )
 {
-    TBitGridIterator    *iterator = TBitGridIteratorCreateWithRowRange(gameEngine->gameBoard, TGameEngineBitGridChannelIsOccupied, startRow, endRow);
+    TBitGridIterator    *iterator = TBitGridIteratorCreateWithRowRange(gameEngine->gameBoard, 1 << TGameEngineBitGridChannelIsOccupied, startRow, endRow);
     unsigned int        startFullRow = -1, nRow = 0, currentRow;
-    bool                didClearRows = false;
     unsigned int        curLevel = gameEngine->scoreboard.level;
-    
+    bool                didClearRows = false;
+
     while ( TBitGridIteratorNextFullRow(iterator, &currentRow) ) {
         if ( nRow == 0 ) {
             startFullRow = currentRow;
@@ -154,22 +160,32 @@ TGameEngineCheckForCompleteRowsInRange(
                 // Extending a multirow match:
                 nRow++;
             } else {
-                TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
+                if ( shouldTestOnly ) {
+                    TBitGridSetChannelInRowRange(gameEngine->gameBoard, TGameEngineBitGridChannelIsCompleted, startFullRow, startFullRow + nRow - 1, true);
+                } else {
+                    TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
+                    TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
+                    startFullRow = currentRow, nRow = 1;
+                }
                 didClearRows = true;
-                TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
-                startFullRow = currentRow, nRow = 1;
             }
         }
     }
     if ( nRow > 0 ) {
-        TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
+        if ( shouldTestOnly ) {
+            TBitGridSetChannelInRowRange(gameEngine->gameBoard, TGameEngineBitGridChannelIsCompleted, startFullRow, startFullRow + nRow - 1, true);
+        } else {
+            TBitGridClearLines(gameEngine->gameBoard, startFullRow, startFullRow + nRow - 1);
+            TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
+            startFullRow = currentRow, nRow = 1;
+        }
         didClearRows = true;
-        TScoreboardAddLinesOfType(&gameEngine->scoreboard, nRow);
     }
-    if ( didClearRows ) {
+    if ( didClearRows && ! shouldTestOnly ) {
         // Level change?
         if ( gameEngine->scoreboard.level > curLevel ) gameEngine->tPerLine = timespec_tpl_with_level(gameEngine->scoreboard.level);
     }
+    return didClearRows;
 }
 
 //
@@ -183,27 +199,28 @@ TGameEngineTick(
     TGameEngineUpdateNotification       updates = 0;
     struct timespec                     t1, dt;
     
-    if ( ! gameEngine->hasEnded ) {
-        // Get current absolute cycle time:
-        clock_gettime(CLOCK_REALTIME, &t1);
+    // Get current absolute cycle time:
+    clock_gettime(CLOCK_REALTIME, &t1);
     
-        if ( ! gameEngine->hasBeenStarted ) {
+    switch ( gameEngine->gameState ) {
+        
+        case TGameEngineStateStartup:
             if ( theEvent == TGameEngineEventStartGame ) {
                 // Time to start the game:
-                gameEngine->hasBeenStarted = true;
+                gameEngine->gameState++;
                 timespec_add(&gameEngine->tNextDrop, &t1, &gameEngine->tPerLine);
                 updates = TGameEngineUpdateNotificationAll;
             }
-        } else if ( gameEngine->isPaused ) {
-            if ( theEvent == TGameEngineEventTogglePause ) gameEngine->isPaused = false;
-        } else {
-            bool            shouldStopFalling = false;
+            break;
         
+        case TGameEngineStateGameHasStarted: {
+            bool            shouldStopFalling = false;
+    
             if ( timespec_is_ordered_asc(&gameEngine->tNextDrop, &t1) ) {
                 // Time for an automatic drop:
                 TGridPos    newP = gameEngine->currentSprite.P;
                 uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-        
+    
                 newP.j++;
                 board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                 if ( (board4x4 & piece4x4) == 0 ) {
@@ -218,51 +235,50 @@ TGameEngineTick(
                     shouldStopFalling = true;
                 }
                 timespec_add(&gameEngine->tNextDrop, &t1, &gameEngine->tPerLine);
-            }
-        
+            }        
             switch ( theEvent ) {
-        
+    
                 case TGameEngineEventNoOp:
                     break;
-            
+        
                 case TGameEngineEventTogglePause:
-                    gameEngine->isPaused = true;
+                    gameEngine->gameState = TGameEngineStateGameIsPaused;
                     updates |= TGameEngineUpdateNotificationGameBoard;
                     break;
-            
+        
                 case TGameEngineEventReset:
                     TGameEngineReset(gameEngine);
                     TGameEngineTick(gameEngine, TGameEngineEventStartGame);
                     return TGameEngineUpdateNotificationAll;
-            
+        
                 case TGameEngineEventRotateClockwise: {
                     TSprite         newOrientation = TSpriteMakeRotated(&gameEngine->currentSprite);
                     uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newOrientation.P);
                     uint16_t        piece4x4 = TSpriteGet4x4(&newOrientation);
-            
+        
                     if ( (board4x4 & piece4x4) == 0 ) {
                         gameEngine->currentSprite = newOrientation;
                         updates |= TGameEngineUpdateNotificationGameBoard;
                     }
                     break;
                 }
-            
+        
                 case TGameEngineEventRotateAntiClockwise: {
                     TSprite         newOrientation = TSpriteMakeRotatedAnti(&gameEngine->currentSprite);
                     uint16_t        board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newOrientation.P);
                     uint16_t        piece4x4 = TSpriteGet4x4(&newOrientation);
-            
+        
                     if ( (board4x4 & piece4x4) == 0 ) {
                         gameEngine->currentSprite = newOrientation;
                         updates |= TGameEngineUpdateNotificationGameBoard;
                     }
                     break;
                 }
-            
+        
                 case TGameEngineEventMoveLeft: {
                     TGridPos    newP = gameEngine->currentSprite.P;
                     uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-            
+        
                     newP.i--;
                     board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
@@ -271,11 +287,11 @@ TGameEngineTick(
                     }
                     break;
                 }
-            
+        
                 case TGameEngineEventMoveRight: {
                     TGridPos    newP = gameEngine->currentSprite.P;
                     uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-            
+        
                     newP.i++;
                     board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
@@ -284,11 +300,11 @@ TGameEngineTick(
                     }
                     break;
                 }
-            
+        
                 case TGameEngineEventSoftDrop: {
                     TGridPos    newP = gameEngine->currentSprite.P;
                     uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-            
+        
                     newP.j++;
                     board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                     if ( (board4x4 & piece4x4) == 0 ) {
@@ -302,13 +318,13 @@ TGameEngineTick(
                     timespec_add(&gameEngine->tNextDrop, &t1, &gameEngine->tPerLine);
                     break;
                 }
-            
+        
                 case TGameEngineEventHardDrop: {
                     while ( 1 ) {
                         // Test for ok:
                         TGridPos    newP = gameEngine->currentSprite.P;
                         uint16_t    board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-            
+        
                         newP.j++;
                         board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, newP);
                         if ( (board4x4 & piece4x4) == 0 ) {
@@ -321,45 +337,97 @@ TGameEngineTick(
                     shouldStopFalling = true;
                     break;
                 }
-            
-            }
         
+            }
+    
             if ( shouldStopFalling ) {
                 uint16_t            board4x4, piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
-                
+            
                 TBitGridSet4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P, piece4x4);
                 if ( gameEngine->doesUseColor ) {
-                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 1, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x1) ? piece4x4 : 0x0000);
-                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 2, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x2) ? piece4x4 : 0x0000);
+                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 2, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x1) ? piece4x4 : 0x0000);
+                    TBitGridSet4x4AtPosition(gameEngine->gameBoard, 3, gameEngine->currentSprite.P, (gameEngine->currentSprite.colorIdx & 0x2) ? piece4x4 : 0x0000);
                 }
-                TGameEngineCheckForCompleteRowsInRange(gameEngine, gameEngine->currentSprite.P.j, gameEngine->currentSprite.P.j + 3);
+                if ( TGameEngineCheckForCompleteRowsInRange(gameEngine, true, gameEngine->currentSprite.P.j, gameEngine->currentSprite.P.j + 3) ) {
+                    gameEngine->gameState = TGameEngineStateHoldClearedLines;
+                    gameEngine->completionFlashIdx = 0;
+                    timespec_add(&gameEngine->tNextDrop, &t1, &TGameEngine500ms);
+                    updates |= TGameEngineUpdateNotificationGameBoard;
+                } else {
+                    gameEngine->scoreboard.score += gameEngine->extraPoints;
+                    gameEngine->extraPoints = 0;
+                    gameEngine->isInSoftDrop = false;
+                    TGameEngineChooseNextPiece(gameEngine);
+                    timespec_add(&gameEngine->tNextDrop, &t1, &gameEngine->tPerLine);
+            
+                    // Test for game over:
+                    piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
+                    board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P);
+                    if ( (board4x4 & piece4x4) == 0 ) {
+                        gameEngine->gameState = TGameEngineStateGameHasStarted;
+                    } else {
+                        gameEngine->gameState = TGameEngineStateCheckHighScore;
+                        memset(&gameEngine->currentSprite, 0, sizeof(gameEngine->currentSprite));
+                        memset(&gameEngine->nextSprite, 0, sizeof(gameEngine->nextSprite));
+                        TBitGridFillCells(gameEngine->gameBoard, 1);
+                    }
+                    updates |= TGameEngineUpdateNotificationGameBoard | TGameEngineUpdateNotificationScoreboard | TGameEngineUpdateNotificationNextTetromino;
+                }
+            }
+    
+            timespec_add(&gameEngine->tElapsed, &gameEngine->tElapsed, timespec_subtract(&dt, &t1, &gameEngine->tLastTick));                
+            break;
+        }
+        
+        case TGameEngineStateGameIsPaused:
+            if ( theEvent == TGameEngineEventTogglePause ) gameEngine->gameState = TGameEngineStateGameHasStarted;
+            break;
+        
+        case TGameEngineStateHoldClearedLines:
+            if ( timespec_is_ordered_asc(&gameEngine->tNextDrop, &t1) ) {
+                uint16_t            board4x4, piece4x4;
+                
+                TGameEngineCheckForCompleteRowsInRange(gameEngine, false, gameEngine->currentSprite.P.j, gameEngine->currentSprite.P.j + 3);
+
                 gameEngine->scoreboard.score += gameEngine->extraPoints;
                 gameEngine->extraPoints = 0;
                 gameEngine->isInSoftDrop = false;
                 TGameEngineChooseNextPiece(gameEngine);
-                
+                timespec_add(&gameEngine->tNextDrop, &t1, &gameEngine->tPerLine);
+            
                 // Test for game over:
                 piece4x4 = TSpriteGet4x4(&gameEngine->currentSprite);
                 board4x4 = TBitGridExtract4x4AtPosition(gameEngine->gameBoard, 0, gameEngine->currentSprite.P);
-                if ( (board4x4 & piece4x4) != 0 ) {
-                    gameEngine->hasEnded = true;
+                if ( (board4x4 & piece4x4) == 0 ) {
+                    gameEngine->gameState = TGameEngineStateGameHasStarted;
+                } else {
+                    gameEngine->gameState = TGameEngineStateCheckHighScore;
                     memset(&gameEngine->currentSprite, 0, sizeof(gameEngine->currentSprite));
                     memset(&gameEngine->nextSprite, 0, sizeof(gameEngine->nextSprite));
-                    TBitGridFill(gameEngine->gameBoard, 1);
+                    TBitGridFillCells(gameEngine->gameBoard, 1);
                 }
-                updates |= TGameEngineUpdateNotificationGameBoard | TGameEngineUpdateNotificationScoreboard | TGameEngineUpdateNotificationNextTetromino;
+                updates |= TGameEngineUpdateNotificationScoreboard | TGameEngineUpdateNotificationNextTetromino;
+            } else {
+                gameEngine->completionFlashIdx = ! gameEngine->completionFlashIdx;
             }
-        
-            timespec_add(&gameEngine->tElapsed, &gameEngine->tElapsed, timespec_subtract(&dt, &t1, &gameEngine->tLastTick));
-        }
-    
-        gameEngine->tLastTick = t1;
-        gameEngine->tickCount++;
-    } else if ( theEvent == TGameEngineEventReset ) {
-        TGameEngineReset(gameEngine);
-        TGameEngineTick(gameEngine, TGameEngineEventStartGame);
-        return TGameEngineUpdateNotificationAll;
+            updates |= TGameEngineUpdateNotificationGameBoard;
+            break;
+            
+        case TGameEngineStateGameHasEnded:
+            if ( theEvent == TGameEngineEventReset ) {
+                TGameEngineReset(gameEngine);
+                TGameEngineTick(gameEngine, TGameEngineEventStartGame);
+                return TGameEngineUpdateNotificationAll;
+            }
+            break;
+            
+        case TGameEngineStateCheckHighScore:
+            break;
+            
     }
+
+    gameEngine->tLastTick = t1;
+    gameEngine->tickCount++;
     return updates;
 }
 

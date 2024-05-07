@@ -265,6 +265,58 @@ enum {
 typedef unsigned int TGameEngineUpdateNotification;
 
 /*
+ * @enum TGameEngine state
+ *
+ * The game engine progresses through a series of states that
+ * influence what events it will process, what should be
+ * displayed on the game board, etc.
+ *
+ * The engine is initialized into the startup state.  In this
+ * state, a TGameEngineEventStartGame event will begin play.
+ *
+ * Once play has begun the engine enters the
+ * TGameEngineStateGameHasStarted state.
+ *
+ * A TGameEngineEventTogglePause event will transition to the
+ * TGameEngineStateGameIsPaused state; a subsequent 
+ * TGameEngineEventTogglePause event will transition back to
+ * the TGameEngineStateGameHasStarted state.
+ *
+ * After a tetromino is placed on the game board, if completed
+ * lines are found they are marked as completed in the bit grid
+ * and the engine enters the TGameEngineStateHoldClearedLines
+ * state for 500 ms.  This allows for visual indication of the
+ * completed lines before they are cleared (when the 500 ms expires)
+ * and the engine returns to TGameEngineStateGameHasStarted.
+ *
+ * Once the game board has been filled and no new tetromino can
+ * be introduced, the engine enters the TGameEngineStateCheckHighScore
+ * state.  The external logic (e.g. in tetrominotris.c) is at this
+ * point responsible for handling that action and transitioning the
+ * engine to the TGameEngineStateGameHasEnded state.
+ *
+ * In the TGameEngineStateGameHasEnded state, the only possible
+ * state change is to return to TGameEngineStateStartup on a
+ * TGameEngineEventReset event.
+ */
+enum {
+    TGameEngineStateStartup = 0,
+    TGameEngineStateGameHasStarted,
+    TGameEngineStateGameIsPaused,
+    TGameEngineStateHoldClearedLines,
+    TGameEngineStateCheckHighScore,
+    TGameEngineStateGameHasEnded,
+    TGameEngineStateMax
+};
+
+/*
+ * @typedef TGameEngineState
+ *
+ * The type of a value from the TGameEngine state enumeration.
+ */
+typedef unsigned int TGameEngineState;
+
+/*
  * @typedef TGameEngine
  *
  * Data structure encapsulting all elements of the game
@@ -274,12 +326,11 @@ typedef struct {
     // The game board:
     TBitGrid            *gameBoard;
     
-    // Basic states:
-    bool                hasBeenStarted;
-    bool                isPaused;
-    bool                hasEnded;
-    bool                didDoHighScores;
+    // Game engine state:
+    TGameEngineState    gameState;
+    bool                isInSoftDrop;
     bool                doesUseColor;
+    unsigned int        completionFlashIdx;
     
     // Starting level for the game(s):
     unsigned int        startingLevel;
@@ -287,7 +338,6 @@ typedef struct {
     // The scoreboard for the game:
     TScoreboard         scoreboard;
     unsigned int        extraPoints;
-    bool                isInSoftDrop;
     
     // The base starting postion on the grid of each new tetromino:
     TGridPos            startingPos;
@@ -314,7 +364,7 @@ typedef struct {
     struct timespec     tPerLine;           // time a tetromino hangs stationary
                                             // (changes by level)
     struct timespec     tNextDrop;          // time at which next automatic line
-                                            // drop occurs
+                                            // drop (or completed line clear) occurs
 } TGameEngine;
 
 /*
@@ -349,10 +399,9 @@ void TGameEngineChooseNextPiece(TGameEngine *gameEngine);
 /*
  * @function TGameEngineCheckForCompleteRows
  *
- * Check for any ranges of completed rows; remove them from the game board; and
- * update the line type stats; and update the score.
+ * Check for any ranges of completed rows and return true if any were present.
  */
-void TGameEngineCheckForCompleteRows(TGameEngine *gameEngine);
+bool TGameEngineCheckForCompleteRows(TGameEngine *gameEngine, bool shouldTestOnly);
 
 /*
  * @function TGameEngineCheckForCompleteRowsInRange
@@ -366,7 +415,7 @@ void TGameEngineCheckForCompleteRows(TGameEngine *gameEngine);
  * settled.  So it's more optimal to just check the 4 rows the tetromino
  * sprite occupies.
  */
-void TGameEngineCheckForCompleteRowsInRange(TGameEngine *gameEngine, unsigned int startRow, unsigned int endRow);
+bool TGameEngineCheckForCompleteRowsInRange(TGameEngine *gameEngine, bool shouldTestOnly, unsigned int startRow, unsigned int endRow);
 
 /*
  * @function TGameEngineTick

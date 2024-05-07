@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [1.2.0] - 2024-05-07
+
+### Added
+
+- Game engine rewritten as more of a state machine
+- Rewrite allowed introduction of "board clearing" state
+    - 500 ms freeze to the game
+    - Completed lines now flash before being removed
+
+### Fixed
+
+- When game is launched a "press any key to start" message is displayed rather than having the game start immediately
+
+
 ## [1.1.1] - 2024-05-05
 
 ### Changed

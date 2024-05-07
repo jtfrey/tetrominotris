@@ -351,11 +351,20 @@ void TBitGridScroll(TBitGrid *bitGrid);
 void TBitGridClearLines(TBitGrid *bitGrid, unsigned int jLow, unsigned int jHigh);
 
 /*
- * @function TBitGridFill
+ * @function TBitGridFillCells
  *
- * Fill every cell of the grid with value.
+ * Fill every cell of the grid with value, where the components of value are
+ * split into the individual channels of bitGrid.
  */
-void TBitGridFill(TBitGrid *bitGrid, TCell value);
+void TBitGridFillCells(TBitGrid *bitGrid, TCell value);
+
+/*
+ * @function TBitGridSetRowsInRange
+ *
+ * Set all columns in rows jLow through jHigh of the given channel to the given
+ * bit value.
+ */
+void TBitGridSetChannelInRowRange(TBitGrid *bitGrid, unsigned int channelIdx, unsigned int jLow, unsigned int jHigh, bool value);
 
 /*
  * @function TBitGridExtract4x4AtPosition
